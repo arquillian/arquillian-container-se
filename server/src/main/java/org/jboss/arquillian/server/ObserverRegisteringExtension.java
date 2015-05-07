@@ -22,7 +22,7 @@ public class ObserverRegisteringExtension implements LoadableExtension {
 
     @Override
     public void register(final ExtensionBuilder builder) {
-       builder.observer(AfterSuiteObserver.class);
+       builder.observer(AfterUndeployObserver.class);
 
     }
 }

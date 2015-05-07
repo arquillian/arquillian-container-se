@@ -81,7 +81,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     @Override
     public void undeploy(Descriptor descriptor) throws DeploymentException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
