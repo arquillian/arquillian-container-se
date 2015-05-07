@@ -1,6 +1,8 @@
 .project
 .settings
 .classpath
+.idea
+*.iml
 target
 test-output
 dependency-reduced-pom.xml
