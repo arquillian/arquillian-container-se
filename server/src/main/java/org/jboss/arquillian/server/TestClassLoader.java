@@ -9,7 +9,7 @@ import org.jboss.arquillian.protocol.jmx.JMXTestRunner;
  */
 public class TestClassLoader implements JMXTestRunner.TestClassLoader {
     private final ClassLoader testClassLoader;
-    private final Logger log = Logger.getLogger(TestClassLoader.class.getName());
+    private final static Logger log = Logger.getLogger(TestClassLoader.class.getName());
 
     TestClassLoader(ClassLoader classLoader) {
         testClassLoader = classLoader;

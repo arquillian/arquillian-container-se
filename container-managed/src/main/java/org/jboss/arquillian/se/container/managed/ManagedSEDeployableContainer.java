@@ -29,11 +29,11 @@ import org.jboss.arquillian.container.spi.client.protocol.ProtocolDescription;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.JMXContext;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.ProtocolMetaData;
 import org.jboss.arquillian.se.container.managed.jmx.SimpleJMXProtocol;
-import org.jboss.arquillian.se.container.managed.util.ServerWarmUp;
+import org.jboss.arquillian.se.container.managed.util.ServerAwait;
 import org.jboss.arquillian.server.Main;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.descriptor.api.Descriptor;
-import org.jboss.shrinkwrap.impl.base.exporter.zip.ZipExporterImpl;
 
 public class ManagedSEDeployableContainer implements DeployableContainer<ManagedSEContainerConfiguration> {
 
@@ -76,7 +76,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     @Override
     public void deploy(Descriptor descriptor) throws DeploymentException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -89,21 +89,15 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         log.info("Undeploying " + archive.getName());
         materializedDeployment.delete();
         //destroy process
-        final Runnable shutdownServerRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (process != null) {
-                    process.destroy();
-                    try {
-                        process.waitFor();
-                    } catch (final InterruptedException e) {
-                        Thread.interrupted();
-                        throw new RuntimeException("Interrupted while awaiting server daemon process termination", e);
-                    }
-                }
+        if (process != null) {
+            process.destroy();
+            try {
+                process.waitFor();
+            } catch (final InterruptedException e) {
+                Thread.interrupted();
+                throw new RuntimeException("Interrupted while awaiting server daemon process termination", e);
             }
-        };
-        shutdownServerRunnable.run();
+        }
     }
 
     @Override
@@ -125,22 +119,21 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
             throw new DeploymentException("Could not start process", e);
         }
 
-        serverWarmUp(host, port, 5);
+        serverAwait(host, port, 5);
         ProtocolMetaData protocolMetaData = new ProtocolMetaData();
         protocolMetaData.addContext(new JMXContext(host, port));
         return protocolMetaData;
     }
 
-    private void serverWarmUp(String host, int port, int countDownLatch) {
+    private void serverAwait(String host, int port, int countDownLatch) {
 
-        ServerWarmUp socketTimeoutCheck = new ServerWarmUp(host, port, countDownLatch);
-        socketTimeoutCheck.run();
+        ServerAwait serverAwait = new ServerAwait(host, port, countDownLatch);
+        serverAwait.run();
     }
 
     private void materializeArchive(Archive<?> archive) {
-        ZipExporterImpl expt = new ZipExporterImpl(archive);
         materializedDeployment = new File(TARGET.concat(File.separator).concat(archive.getName()));
-        expt.exportTo(materializedDeployment);
+        archive.as(ZipExporter.class).exportTo(materializedDeployment);
     }
 
     private List<String> buildProcessCommand(String archiveName) {

@@ -14,7 +14,7 @@ import org.jboss.arquillian.protocol.jmx.JMXTestRunner;
 public class Main {
 
     private JMXTestRunner testRunner;
-    private final Logger log = Logger.getLogger(Main.class.getName());
+    private final static Logger log = Logger.getLogger(Main.class.getName());
 
     public Main(ClassLoader classLoader) {
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
