@@ -1,6 +1,7 @@
 package org.jboss.arquillian.server;
 
 import java.lang.management.ManagementFactory;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
 
 import javax.management.JMException;
@@ -13,32 +14,24 @@ import org.jboss.arquillian.protocol.jmx.JMXTestRunner;
  */
 public class Main {
 
-    private JMXTestRunner testRunner;
-    private final Logger log = Logger.getLogger(Main.class.getName());
+    public static final CountDownLatch SYNC = new CountDownLatch(1);
+    private static final Logger log = Logger.getLogger(Main.class.getName());
 
-    public Main(ClassLoader classLoader) {
+    public static void main(String[] args) {
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 
         try {
-            testRunner = new JMXTestRunner(new TestClassLoader(classLoader));
+            JMXTestRunner testRunner = new JMXTestRunner(new TestClassLoader(Main.class.getClassLoader()));
             testRunner.registerMBean(mbs);
             log.info("JMXTestRunner initialized.");
         } catch (JMException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Unable to register JMXTestRunner", e);
         }
-    }
-    
-    public static void main(String[] args) {
-       new Main(Thread.currentThread().getContextClassLoader());
-        //some wait
-        int i = 0;
-         while (!AfterSuiteObserver.END.get()) {
-        // while(i < 10000){
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        try {
+            SYNC.await();
+        } catch (InterruptedException e) {
+            Thread.interrupted();
+            throw new RuntimeException("Interrupted waiting for undeploy signal", e);
         }
     }
 }
