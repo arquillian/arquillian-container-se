@@ -9,7 +9,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class FirstTest extends Arquillian {
+public class BasicClassPathCompositeArchiveTest extends Arquillian {
 
     @Deployment
     public static Archive<?> deploy() {

@@ -7,11 +7,11 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class SecondTest extends Arquillian {
+public class BasicJavaArchiveTest extends Arquillian {
 
     @Deployment
     public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class).addClasses(SecondTest.class);
+        return ShrinkWrap.create(JavaArchive.class).addClasses(BasicJavaArchiveTest.class);
     }
 
     @Test
