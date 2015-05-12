@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.jboss.arquillian.container.spi.client.container.DeployableContainer;
@@ -32,8 +33,14 @@ import org.jboss.arquillian.se.container.managed.jmx.SimpleJMXProtocol;
 import org.jboss.arquillian.se.container.managed.util.ServerAwait;
 import org.jboss.arquillian.server.Main;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ArchivePath;
+import org.jboss.shrinkwrap.api.Node;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
+import org.jboss.shrinkwrap.api.importer.ZipImporter;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.shrinkwrap.descriptor.api.Descriptor;
+import org.jboss.shrinkwrap.impl.base.filter.IncludeRegExpPaths;
 
 public class ManagedSEDeployableContainer implements DeployableContainer<ManagedSEContainerConfiguration> {
 
@@ -43,10 +50,11 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private static final String DEBUG_AGENT_STRING = "-Xrunjdwp:server=y,transport=dt_socket,address=5005,suspend=y";
     private static final String TARGET = "target";
     private static final String SERVER_JAR_NAME = "server.jar";
+    private static final String REGEX_FOR_JAR_FILE = "([^\\s]+(\\.(?i)jar)$)";
 
     private boolean debugModeEnabled;
     private Process process;
-    private File materializedDeployment;
+    private List<File> materializedDeployments;
     private String host;
     private int port;
 
@@ -59,6 +67,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         debugModeEnabled = configuration.isDebug();
         host = configuration.getHost();
         port = configuration.getPort();
+        materializedDeployments = new ArrayList<>();
     }
 
     @Override
@@ -87,7 +96,10 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     @Override
     public void undeploy(Archive archive) throws DeploymentException {
         log.info("Undeploying " + archive.getName());
-        materializedDeployment.delete();
+        for (File materializedDeployment : materializedDeployments) {
+           materializedDeployment.delete();
+        }
+        materializedDeployments = new ArrayList<>();
         //destroy process
         if (process != null) {
             process.destroy();
@@ -104,7 +116,18 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     public ProtocolMetaData deploy(final Archive archive) throws DeploymentException {
 
         log.info("Deploying " + archive.getName());
-        materializeArchive(archive);
+        Map<ArchivePath, Node> content = archive.getContent(new IncludeRegExpPaths(REGEX_FOR_JAR_FILE));
+
+        // if size is greater than 0 then we get composite archive
+        if (content.size() > 0) {
+            for (Map.Entry<ArchivePath, Node> entry : content.entrySet()) {
+                JavaArchive arch = ShrinkWrap.create(JavaArchive.class, entry.getValue().toString());
+                arch.as(ZipImporter.class).importFrom(entry.getValue().getAsset().openStream());
+                materializeArchive(arch);
+            }
+        } else {
+            materializeArchive(archive);
+        }
 
         List<String> processCommand = buildProcessCommand(archive.getName());
         // Launch the process
@@ -132,8 +155,9 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     }
 
     private void materializeArchive(Archive<?> archive) {
-        materializedDeployment = new File(TARGET.concat(File.separator).concat(archive.getName()));
-        archive.as(ZipExporter.class).exportTo(materializedDeployment);
+        File deploymentFile = new File(TARGET.concat(File.separator).concat(archive.getName()));
+        archive.as(ZipExporter.class).exportTo(deploymentFile);
+        materializedDeployments.add(deploymentFile);
     }
 
     private List<String> buildProcessCommand(String archiveName) {
@@ -141,7 +165,11 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         final File javaHome = new File(System.getProperty(SYSPROP_KEY_JAVA_HOME));
         command.add(javaHome.getAbsolutePath() + File.separator + "bin" + File.separator + "java");
         command.add("-cp");
-        command.add(TARGET + File.separator + SERVER_JAR_NAME + File.pathSeparator + TARGET + File.separator + archiveName);
+        StringBuilder builder = new StringBuilder(TARGET + File.separator + SERVER_JAR_NAME);
+        for (File materializedDeployment : materializedDeployments) {
+            builder.append(File.pathSeparator + TARGET + File.separator + materializedDeployment.getName());
+        }
+        command.add(builder.toString());
         command.add("-Dcom.sun.management.jmxremote");
         command.add("-Dcom.sun.management.jmxremote.port=" + port);
         command.add("-Dcom.sun.management.jmxremote.authenticate=false");

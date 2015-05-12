@@ -1,0 +1,3 @@
+implementingClassName=org.jboss.arquillian.se.container.managed.archive.ClassPathCompositeArchiveImpl
+extension=.zip
+archiveFormat=ZIP
