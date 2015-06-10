@@ -9,8 +9,8 @@
 
     <container qualifier="se-container" default="true">
         <configuration>
-            <!-- to enable debug on port 5005 -->
-            <property name="debug">false</property>
+            <!-- to enable debug on port 8787 -->
+            <property name="debug">${container.debug}</property>
         </configuration>
     </container>
 </arquillian>

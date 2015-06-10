@@ -14,6 +14,10 @@
     <artifactId>container-managed</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+    
+    <properties>
+        <container.debug>false</container.debug>
+    </properties>
 
     <dependencies>
 
@@ -76,6 +80,9 @@
                 <version>${maven.surefire.plugin.version}</version>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables>
+                        <debug>${container.debug}</debug>
+                    </systemPropertyVariables>
                 </configuration>
                 <executions>
                     <execution>

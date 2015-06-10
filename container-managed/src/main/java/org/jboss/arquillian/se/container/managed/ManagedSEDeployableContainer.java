@@ -47,7 +47,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private static final Logger log = Logger.getLogger(ManagedSEDeployableContainer.class.getName());
     private static final String SYSPROP_KEY_JAVA_HOME = "java.home";
     private static final String X_DEBUG = "-Xdebug";
-    private static final String DEBUG_AGENT_STRING = "-Xrunjdwp:server=y,transport=dt_socket,address=5005,suspend=y";
+    private static final String DEBUG_AGENT_STRING = "-Xrunjdwp:server=y,transport=dt_socket,address=8787,suspend=y";
     private static final String TARGET = "target";
     private static final String SERVER_JAR_NAME = "server.jar";
     private static final String REGEX_FOR_JAR_FILE = "([^\\s]+(\\.(?i)jar)$)";
@@ -142,7 +142,11 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
             throw new DeploymentException("Could not start process", e);
         }
 
-        serverAwait(host, port, 5);
+        if(debugModeEnabled){
+            serverAwait(host, port, 15);
+        } else {
+           serverAwait(host, port, 5);
+        }
         ProtocolMetaData protocolMetaData = new ProtocolMetaData();
         protocolMetaData.addContext(new JMXContext(host, port));
         return protocolMetaData;
