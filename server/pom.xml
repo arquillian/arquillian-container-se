@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.jboss.arquillian.container</groupId>
-    <artifactId>se-server</artifactId>
+    <artifactId>server</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     
@@ -20,17 +20,12 @@
         <dependency>
             <groupId>org.jboss.arquillian.protocol</groupId>
             <artifactId>arquillian-protocol-jmx</artifactId>
-            <version>${arquillian.version}</version>
-            <!--<exclusions>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.jboss.arquillian.container</groupId>-->
-                    <!--<artifactId>arquillian-container-test-spi</artifactId>-->
-                <!--</exclusion>-->
-            <!--</exclusions>-->
         </dependency>
+
     </dependencies>
 
     <build>
+        <finalName>server</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -48,26 +43,6 @@
                                     <mainClass>org.jboss.arquillian.container.se.server.Main</mainClass>
                                 </transformer>
                             </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven.surefire.plugin.version}</version>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>it</id>
-                        <phase>integration-test</phase>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <skip>false</skip>
                         </configuration>
                     </execution>
                 </executions>

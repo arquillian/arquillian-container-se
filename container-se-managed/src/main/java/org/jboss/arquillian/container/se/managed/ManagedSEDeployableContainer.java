@@ -17,21 +17,22 @@
 package org.jboss.arquillian.container.se.managed;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.jboss.arquillian.container.se.managed.jmx.SimpleJMXProtocol;
+import org.jboss.arquillian.container.se.managed.jmx.CustomJMXProtocol;
+import org.jboss.arquillian.container.se.managed.util.ServerAwait;
 import org.jboss.arquillian.container.spi.client.container.DeployableContainer;
 import org.jboss.arquillian.container.spi.client.container.DeploymentException;
 import org.jboss.arquillian.container.spi.client.container.LifecycleException;
 import org.jboss.arquillian.container.spi.client.protocol.ProtocolDescription;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.JMXContext;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.ProtocolMetaData;
-import org.jboss.arquillian.container.se.managed.util.ServerAwait;
-import org.jboss.arquillian.container.se.server.Main;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ArchivePath;
 import org.jboss.shrinkwrap.api.Node;
@@ -49,14 +50,17 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private static final String X_DEBUG = "-Xdebug";
     private static final String DEBUG_AGENT_STRING = "-Xrunjdwp:server=y,transport=dt_socket,address=8787,suspend=y";
     private static final String TARGET = "target";
-    private static final String SERVER_JAR_NAME = "se-server.jar";
+    private static final String SERVER_JAR_NAME = "server.jar";
     private static final String REGEX_FOR_JAR_FILE = "([^\\s]+(\\.(?i)jar)$)";
+    private static final String SERVER_MAIN_CLASS_FQN = "org.jboss.arquillian.container.se.server.Main";
 
     private boolean debugModeEnabled;
     private Process process;
-    private List<File> materializedDeployments;
+    private List<File> materializedTestDeployments;
+    private List<File> dependenciesJars;
     private String host;
     private int port;
+    private String librariesPath;
 
     @Override
     public Class getConfigurationClass() {
@@ -67,7 +71,9 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         debugModeEnabled = configuration.isDebug();
         host = configuration.getHost();
         port = configuration.getPort();
-        materializedDeployments = new ArrayList<>();
+        materializedTestDeployments = new ArrayList<>();
+        dependenciesJars = new ArrayList<>();
+        librariesPath = configuration.getLibrariesPath();
     }
 
     @Override
@@ -80,7 +86,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     @Override
     public ProtocolDescription getDefaultProtocol() {
-        return new ProtocolDescription(SimpleJMXProtocol.NAME);
+        return new ProtocolDescription(CustomJMXProtocol.NAME);
     }
 
     @Override
@@ -96,10 +102,10 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     @Override
     public void undeploy(Archive archive) throws DeploymentException {
         log.info("Undeploying " + archive.getName());
-        for (File materializedDeployment : materializedDeployments) {
-           materializedDeployment.delete();
+        for (File materializedDeployment : materializedTestDeployments) {
+            materializedDeployment.delete();
         }
-        materializedDeployments = new ArrayList<>();
+        materializedTestDeployments = new ArrayList<>();
         //destroy process
         if (process != null) {
             process.destroy();
@@ -128,6 +134,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         } else {
             materializeArchive(archive);
         }
+        readJarFilesFromDirectory();
 
         List<String> processCommand = buildProcessCommand(archive.getName());
         // Launch the process
@@ -142,10 +149,10 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
             throw new DeploymentException("Could not start process", e);
         }
 
-        if(debugModeEnabled){
+        if (debugModeEnabled) {
             serverAwait(host, port, 15);
         } else {
-           serverAwait(host, port, 5);
+            serverAwait(host, port, 5);
         }
         ProtocolMetaData protocolMetaData = new ProtocolMetaData();
         protocolMetaData.addContext(new JMXContext(host, port));
@@ -161,7 +168,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private void materializeArchive(Archive<?> archive) {
         File deploymentFile = new File(TARGET.concat(File.separator).concat(archive.getName()));
         archive.as(ZipExporter.class).exportTo(deploymentFile);
-        materializedDeployments.add(deploymentFile);
+        materializedTestDeployments.add(deploymentFile);
     }
 
     private List<String> buildProcessCommand(String archiveName) {
@@ -170,8 +177,11 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         command.add(javaHome.getAbsolutePath() + File.separator + "bin" + File.separator + "java");
         command.add("-cp");
         StringBuilder builder = new StringBuilder(TARGET + File.separator + SERVER_JAR_NAME);
-        for (File materializedDeployment : materializedDeployments) {
+        for (File materializedDeployment : materializedTestDeployments) {
             builder.append(File.pathSeparator + TARGET + File.separator + materializedDeployment.getName());
+        }
+        for (File dependencyJar : dependenciesJars) {
+            builder.append(File.pathSeparator + dependencyJar.getPath());
         }
         command.add(builder.toString());
         command.add("-Dcom.sun.management.jmxremote");
@@ -182,8 +192,24 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
             command.add(X_DEBUG);
             command.add(DEBUG_AGENT_STRING);
         }
-        command.add(Main.class.getName());
+        command.add(SERVER_MAIN_CLASS_FQN);
         return command;
+    }
+
+    private void readJarFilesFromDirectory() throws DeploymentException {
+        File lib = new File(librariesPath);
+        if (!lib.exists() || lib.isFile()) {
+            throw new DeploymentException("Cannot read files from " + librariesPath);
+        }
+
+        File[] dep = lib.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".jar");
+            }
+        });
+        dependenciesJars.addAll(Arrays.asList(dep));
+
     }
 
 }

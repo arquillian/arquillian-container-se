@@ -1,7 +1,8 @@
-package org.jboss.arquillian.container.se.managed.archive;
+package org.jboss.arquillian.container.se.managed.jmx;
 
 import java.util.Collection;
 
+import org.jboss.arquillian.container.composite.archive.ClassPathCompositeArchive;
 import org.jboss.arquillian.container.test.spi.TestDeployment;
 import org.jboss.arquillian.container.test.spi.client.deployment.DeploymentPackager;
 import org.jboss.arquillian.container.test.spi.client.deployment.ProtocolArchiveProcessor;
@@ -13,7 +14,7 @@ import org.jboss.shrinkwrap.impl.base.path.BasicPath;
 /**
  * @author Tomas Remes
  */
-public class SimpleDeploymentPackager implements DeploymentPackager {
+public class TestDeploymentPackager implements DeploymentPackager {
 
     @Override
     public Archive<?> generateDeployment(TestDeployment testDeployment, Collection<ProtocolArchiveProcessor> collection) {

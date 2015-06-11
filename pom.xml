@@ -10,8 +10,9 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>se-server</module>
+        <module>server</module>
         <module>container-se-managed</module>
+        <module>composite-archive</module>
     </modules>
 
     <properties>

@@ -1,13 +1,12 @@
 package org.jboss.arquillian.container.se.managed.jmx;
 
-import org.jboss.arquillian.container.se.managed.archive.SimpleDeploymentPackager;
 import org.jboss.arquillian.container.test.spi.client.deployment.DeploymentPackager;
 import org.jboss.arquillian.protocol.jmx.AbstractJMXProtocol;
 
 /**
  * @author Tomas Remes
  */
-public class SimpleJMXProtocol extends AbstractJMXProtocol {
+public class CustomJMXProtocol extends AbstractJMXProtocol {
     
     public static final String NAME = "simple-jmx";
     
@@ -18,7 +17,7 @@ public class SimpleJMXProtocol extends AbstractJMXProtocol {
 
     @Override
     public DeploymentPackager getPackager() {
-        return new SimpleDeploymentPackager();
+        return new TestDeploymentPackager();
     }
 
 }

@@ -1,4 +1,4 @@
-package org.jboss.arquillian.container.se.managed.archive;
+package org.jboss.arquillian.container.composite.archive;
 
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;

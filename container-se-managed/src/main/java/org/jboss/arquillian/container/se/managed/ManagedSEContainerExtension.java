@@ -21,14 +21,14 @@ import org.jboss.arquillian.container.test.impl.deployment.ArquillianDeploymentA
 import org.jboss.arquillian.container.test.spi.client.deployment.AuxiliaryArchiveAppender;
 import org.jboss.arquillian.container.test.spi.client.protocol.Protocol;
 import org.jboss.arquillian.core.spi.LoadableExtension;
-import org.jboss.arquillian.container.se.managed.jmx.SimpleJMXProtocol;
+import org.jboss.arquillian.container.se.managed.jmx.CustomJMXProtocol;
 
 public class ManagedSEContainerExtension implements LoadableExtension {
 
     @Override
     public void register(final ExtensionBuilder builder) {
         builder.service(DeployableContainer.class, ManagedSEDeployableContainer.class)
-                .service(Protocol.class, SimpleJMXProtocol.class)
+                .service(Protocol.class, CustomJMXProtocol.class)
                 .service(AuxiliaryArchiveAppender.class, ArquillianDeploymentAppender.class);
 
     }

@@ -24,6 +24,7 @@ public class ManagedSEContainerConfiguration implements ContainerConfiguration {
     private boolean debug;
     private String host = "127.0.0.1";
     private int port = 9999;
+    private String librariesPath;
 
     public void validate() throws ConfigurationException {
     }
@@ -51,5 +52,14 @@ public class ManagedSEContainerConfiguration implements ContainerConfiguration {
     public void setHost(String host) {
         this.host = host;
     }
+
+    public String getLibrariesPath() {
+        return librariesPath;
+    }
+
+    public void setLibrariesPath(String librariesPath) {
+        this.librariesPath = librariesPath;
+    }
+
 
 }
