@@ -23,4 +23,10 @@ public class ClassPathCompositeArchiveBuilder {
         return this.archive.add(archive);
     }
 
+    public ClassPathCompositeArchive addJavaArchive(JavaArchive
+            archive) {
+        return this.archive.add(archive);
+    }
+
+
 }

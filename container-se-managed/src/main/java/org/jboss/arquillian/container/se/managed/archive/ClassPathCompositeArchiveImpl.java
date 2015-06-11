@@ -21,6 +21,12 @@ public class ClassPathCompositeArchiveImpl extends JavaArchiveImpl implements Cl
     }
 
     @Override
+    public ClassPathCompositeArchive add(JavaArchive archive) {
+        delegate.add(archive, new BasicPath(), ZipExporter.class);
+        return this;
+    }
+
+    @Override
     public ClassPathCompositeArchive add(JavaArchive... archive) {
         for (JavaArchive javaArchive : archive) {
             delegate.add(javaArchive, new BasicPath(), ZipExporter.class);
