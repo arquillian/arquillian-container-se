@@ -10,10 +10,10 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>server</module>
+        <module>container-se-api</module>
         <module>container-se-managed</module>
-        <module>composite-archive</module>
-        <module>tests</module>
+        <module>container-se-server</module>
+        <module>container-se-tests</module>
     </modules>
 
     <properties>
