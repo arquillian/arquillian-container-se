@@ -16,6 +16,7 @@
  */
 package org.jboss.arquillian.container.se.server;
 
+import org.jboss.arquillian.container.test.spi.client.deployment.AuxiliaryArchiveAppender;
 import org.jboss.arquillian.core.spi.LoadableExtension;
 
 public class ObserverRegisteringExtension implements LoadableExtension {
@@ -23,6 +24,6 @@ public class ObserverRegisteringExtension implements LoadableExtension {
     @Override
     public void register(final ExtensionBuilder builder) {
        builder.observer(AfterUndeployObserver.class);
-
+       builder.service(AuxiliaryArchiveAppender.class, SEContainerAppender.class);
     }
 }
