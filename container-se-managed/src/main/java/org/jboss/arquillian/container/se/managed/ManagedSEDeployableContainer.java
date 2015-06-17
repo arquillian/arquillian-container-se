@@ -148,20 +148,20 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
             throw new DeploymentException("Could not start process", e);
         }
 
-        if (debugModeEnabled) {
-            serverAwait(host, port, 15);
-        } else {
-            serverAwait(host, port, 5);
+        int waitTime = debugModeEnabled ? 15 : 5;
+        boolean connected = serverAwait(host, port, waitTime);
+        if (!connected) {
+            throw new DeploymentException("Child JVM process failed to start within " + waitTime + " seconds.");
         }
+
         ProtocolMetaData protocolMetaData = new ProtocolMetaData();
         protocolMetaData.addContext(new JMXContext(host, port));
         return protocolMetaData;
     }
 
-    private void serverAwait(String host, int port, int countDownLatch) {
-
-        ServerAwait serverAwait = new ServerAwait(host, port, countDownLatch);
-        serverAwait.run();
+    private boolean serverAwait(String host, int port, int waitTime) {
+        ServerAwait serverAwait = new ServerAwait(host, port, waitTime);
+        return serverAwait.run();
     }
 
     private void materializeArchive(Archive<?> archive) {

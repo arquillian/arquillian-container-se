@@ -3,35 +3,34 @@ package org.jboss.arquillian.container.se.managed.util;
 import java.io.IOException;
 import java.net.Socket;
 
-public class ServerAwait implements Runnable {
+public class ServerAwait {
 
     private final String host;
     private final int port;
-    private boolean connectionAvailable = false;
     private int waitTime;
-    
+
 
     public ServerAwait(String host, int port, int waitTime) {
         this.host = host;
         this.port = port;
-        this.waitTime = waitTime;
+        this.waitTime = waitTime * 10;
     }
 
-    public void run() {
-
-        while (waitTime > 0 && !connectionAvailable) {
+    public boolean run() {
+        while (waitTime > 0) {
             waitTime--;
             try (Socket ignored = new Socket(host, port)) {
-                connectionAvailable = true;
-            } catch (IOException e) {
-                connectionAvailable = false;
+                return true;
+            } catch (IOException ignored) {
             }
             try {
-                Thread.sleep(waitTime*100);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
+                return false;
             }
         }
+        return false;
     }
 
 }
