@@ -18,7 +18,7 @@ package org.jboss.arquillian.container.se.test.simple;
 
 import junit.framework.Assert;
 
-import org.jboss.arquillian.container.composite.archive.ClassPathCompositeArchiveBuilder;
+import org.jboss.arquillian.container.composite.archive.ClassPath;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.Archive;
@@ -35,7 +35,7 @@ public class CompositeClassPathTest {
         final JavaArchive test = ShrinkWrap.create(JavaArchive.class, "test.jar").addClass(CompositeClassPathTest.class);
         final JavaArchive foo = ShrinkWrap.create(JavaArchive.class, "foo.jar").addClass(Foo.class);
         final JavaArchive bar = ShrinkWrap.create(JavaArchive.class, "bar.jar").addClass(Bar.class);
-        return ClassPathCompositeArchiveBuilder.create().addJavaArchive(foo).add(bar).add(test);
+        return ClassPath.builder().add(foo, bar, test).build();
     }
 
     @Test

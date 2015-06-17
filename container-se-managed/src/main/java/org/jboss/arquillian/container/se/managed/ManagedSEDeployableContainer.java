@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
+import org.jboss.arquillian.container.composite.archive.CompositeArchive;
 import org.jboss.arquillian.container.se.managed.jmx.CustomJMXProtocol;
 import org.jboss.arquillian.container.se.managed.util.ServerAwait;
 import org.jboss.arquillian.container.spi.client.container.DeployableContainer;
@@ -34,14 +34,8 @@ import org.jboss.arquillian.container.spi.client.protocol.ProtocolDescription;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.JMXContext;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.ProtocolMetaData;
 import org.jboss.shrinkwrap.api.Archive;
-import org.jboss.shrinkwrap.api.ArchivePath;
-import org.jboss.shrinkwrap.api.Node;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
-import org.jboss.shrinkwrap.api.importer.ZipImporter;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.shrinkwrap.descriptor.api.Descriptor;
-import org.jboss.shrinkwrap.impl.base.filter.IncludeRegExpPaths;
 
 public class ManagedSEDeployableContainer implements DeployableContainer<ManagedSEContainerConfiguration> {
 
@@ -119,16 +113,12 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     @Override
     public ProtocolMetaData deploy(final Archive archive) throws DeploymentException {
-
         log.info("Deploying " + archive.getName());
-        Map<ArchivePath, Node> content = archive.getContent(new IncludeRegExpPaths(REGEX_FOR_JAR_FILE));
 
-        // if size is greater than 0 then we get composite archive
-        if (content.size() > 0) {
-            for (Map.Entry<ArchivePath, Node> entry : content.entrySet()) {
-                JavaArchive arch = ShrinkWrap.create(JavaArchive.class, entry.getValue().toString());
-                arch.as(ZipImporter.class).importFrom(entry.getValue().getAsset().openStream());
-                materializeArchive(arch);
+        if (archive instanceof CompositeArchive) {
+            CompositeArchive composite = (CompositeArchive) archive;
+            for (Archive<?> item : composite.getItems()) {
+                materializeArchive(item);
             }
         } else {
             materializeArchive(archive);
