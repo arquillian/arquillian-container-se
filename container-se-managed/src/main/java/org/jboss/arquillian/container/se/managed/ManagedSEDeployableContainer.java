@@ -197,6 +197,9 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     }
 
     private void readJarFilesFromDirectory() throws DeploymentException {
+        if (librariesPath == null) {
+            return;
+        }
         File lib = new File(librariesPath);
         if (!lib.exists() || lib.isFile()) {
             throw new DeploymentException("Cannot read files from " + librariesPath);
