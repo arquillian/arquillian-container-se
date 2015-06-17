@@ -1,4 +1,4 @@
-package org.jboss.arquillian.container.composite.archive;
+package org.jboss.arquillian.container.se.api;
 
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

@@ -1,4 +1,4 @@
-package org.jboss.arquillian.container.composite.archive;
+package org.jboss.arquillian.container.se.api;
 
 import java.util.Collections;
 import java.util.LinkedList;
