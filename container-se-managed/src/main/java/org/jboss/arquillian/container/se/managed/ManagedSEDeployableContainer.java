@@ -50,7 +50,6 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private static final String X_DEBUG = "-Xdebug";
     private static final String DEBUG_AGENT_STRING = "-Xrunjdwp:server=y,transport=dt_socket,address=8787,suspend=y";
     private static final String TARGET = "target";
-    private static final String SERVER_JAR_NAME = "server.jar";
     private static final String REGEX_FOR_JAR_FILE = "([^\\s]+(\\.(?i)jar)$)";
     private static final String SERVER_MAIN_CLASS_FQN = "org.jboss.arquillian.container.se.server.Main";
 
@@ -176,7 +175,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         final File javaHome = new File(System.getProperty(SYSPROP_KEY_JAVA_HOME));
         command.add(javaHome.getAbsolutePath() + File.separator + "bin" + File.separator + "java");
         command.add("-cp");
-        StringBuilder builder = new StringBuilder(TARGET + File.separator + SERVER_JAR_NAME);
+        StringBuilder builder = new StringBuilder();
         for (File materializedDeployment : materializedTestDeployments) {
             builder.append(File.pathSeparator + TARGET + File.separator + materializedDeployment.getName());
         }
