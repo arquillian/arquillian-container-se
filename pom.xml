@@ -19,11 +19,8 @@
     <properties>
         <!-- Versioning -->
         <arquillian.version>1.1.7.Final</arquillian.version>
-        <testng.version>6.8.8</testng.version>
         <maven.compiler.plugin.version>3.3</maven.compiler.plugin.version>
-        <maven.shade.plugin.version>2.3</maven.shade.plugin.version>
         <maven.surefire.plugin.version>2.18</maven.surefire.plugin.version>
-        <maven.dependency.plugin.version>2.10</maven.dependency.plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -35,13 +32,6 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-
-            <dependency>
-                <groupId>org.testng</groupId>
-                <artifactId>testng</artifactId>
-                <version>${testng.version}</version>
-            </dependency>
-
         </dependencies>
     </dependencyManagement>
 
