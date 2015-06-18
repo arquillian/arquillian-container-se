@@ -17,8 +17,7 @@
 package org.jboss.arquillian.container.se.test.simple;
 
 import junit.framework.Assert;
-
-import org.jboss.arquillian.container.composite.archive.ClassPath;
+import org.jboss.arquillian.container.se.api.ClassPath;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.Archive;

@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.jboss.arquillian.container.composite.archive.CompositeArchive;
+import org.jboss.arquillian.container.se.api.CompositeArchive;
 import org.jboss.arquillian.container.se.managed.jmx.CustomJMXProtocol;
 import org.jboss.arquillian.container.se.managed.util.ServerAwait;
 import org.jboss.arquillian.container.spi.client.container.DeployableContainer;
@@ -44,7 +44,6 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private static final String X_DEBUG = "-Xdebug";
     private static final String DEBUG_AGENT_STRING = "-Xrunjdwp:server=y,transport=dt_socket,address=8787,suspend=y";
     private static final String TARGET = "target";
-    private static final String REGEX_FOR_JAR_FILE = "([^\\s]+(\\.(?i)jar)$)";
     private static final String SERVER_MAIN_CLASS_FQN = "org.jboss.arquillian.container.se.server.Main";
 
     private boolean debugModeEnabled;
@@ -125,7 +124,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         }
         readJarFilesFromDirectory();
 
-        List<String> processCommand = buildProcessCommand(archive.getName());
+        List<String> processCommand = buildProcessCommand();
         // Launch the process
         final ProcessBuilder processBuilder = new ProcessBuilder(processCommand);
         processBuilder.redirectErrorStream(true);
@@ -160,7 +159,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         materializedTestDeployments.add(deploymentFile);
     }
 
-    private List<String> buildProcessCommand(String archiveName) {
+    private List<String> buildProcessCommand() {
         final List<String> command = new ArrayList<String>();
         final File javaHome = new File(System.getProperty(SYSPROP_KEY_JAVA_HOME));
         command.add(javaHome.getAbsolutePath() + File.separator + "bin" + File.separator + "java");

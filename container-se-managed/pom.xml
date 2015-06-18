@@ -29,12 +29,12 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.arquillian.container</groupId>
-            <artifactId>composite-archive</artifactId>
+            <artifactId>container-se-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.arquillian.container</groupId>
-            <artifactId>server</artifactId>
+            <artifactId>container-se-server</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

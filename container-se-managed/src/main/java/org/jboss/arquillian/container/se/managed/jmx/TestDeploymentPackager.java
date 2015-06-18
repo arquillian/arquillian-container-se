@@ -2,7 +2,7 @@ package org.jboss.arquillian.container.se.managed.jmx;
 
 import java.util.Collection;
 
-import org.jboss.arquillian.container.composite.archive.CompositeArchive;
+import org.jboss.arquillian.container.se.api.CompositeArchive;
 import org.jboss.arquillian.container.test.spi.TestDeployment;
 import org.jboss.arquillian.container.test.spi.client.deployment.DeploymentPackager;
 import org.jboss.arquillian.container.test.spi.client.deployment.ProtocolArchiveProcessor;
