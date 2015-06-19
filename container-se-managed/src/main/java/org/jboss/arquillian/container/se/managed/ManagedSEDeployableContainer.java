@@ -55,7 +55,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private String librariesPath;
 
     @Override
-    public Class getConfigurationClass() {
+    public Class<ManagedSEContainerConfiguration> getConfigurationClass() {
         return ManagedSEContainerConfiguration.class;
     }
 
@@ -92,7 +92,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     }
 
     @Override
-    public void undeploy(Archive archive) throws DeploymentException {
+    public void undeploy(Archive<?> archive) throws DeploymentException {
         log.info("Undeploying " + archive.getName());
         for (File materializedDeployment : materializedTestDeployments) {
             materializedDeployment.delete();
@@ -111,7 +111,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     }
 
     @Override
-    public ProtocolMetaData deploy(final Archive archive) throws DeploymentException {
+    public ProtocolMetaData deploy(final Archive<?> archive) throws DeploymentException {
         log.info("Deploying " + archive.getName());
 
         if (archive instanceof CompositeArchive) {
