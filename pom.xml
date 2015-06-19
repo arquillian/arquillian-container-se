@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.jboss</groupId>
-        <artifactId>jboss-parent</artifactId>
-        <version>17</version>
-    </parent>
 
     <groupId>org.jboss.arquillian.container</groupId>
     <artifactId>arquillian-container-se</artifactId>
@@ -25,6 +21,11 @@
         <maven.compiler.plugin.version>3.3</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>2.18</maven.surefire.plugin.version>
         <maven.nexus.plugin.version>2.1</maven.nexus.plugin.version>
+        <scm.plugin.version>1.9.2</scm.plugin.version>
+        <maven.scm.provider.gitexe>1.9.1</maven.scm.provider.gitexe>
+        <nexus.plugin.version>2.1</nexus.plugin.version>
+        <maven.release.plugin.version>2.5.1</maven.release.plugin.version>
+        <jboss.releases.repo.url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</jboss.releases.repo.url>
     </properties>
 
     <dependencyManagement>
@@ -40,19 +41,38 @@
     </dependencyManagement>
 
     <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-release-plugin</artifactId>
-                <configuration>
-                    <autoVersionSubmodules>true</autoVersionSubmodules>
-                    <pushChanges>false</pushChanges>
-                    <localCheckout>true</localCheckout>
-                </configuration>
-            </plugin>
-        </plugins>
-
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <configuration>
+                        <arguments>-Drelease -Dscm.plugin.version=${scm.plugin.version} -Dmaven.scm.provider.gitexe=${maven.scm.provider.gitexe}</arguments>
+                        <autoVersionSubmodules>true</autoVersionSubmodules>
+                    </configuration>
+                    <version>${maven.release.plugin.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven.scm</groupId>
+                            <artifactId>maven-scm-provider-gitexe</artifactId>
+                            <version>${maven.scm.provider.gitexe}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>nexus-maven-plugin</artifactId>
+                    <version>${nexus.plugin.version}</version>
+                    <configuration>
+                        <nexusUrl>https://repository.jboss.org/nexus</nexusUrl>
+                        <serverAuthId>jboss-releases-repository</serverAuthId>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-scm-plugin</artifactId>
+                    <version>${scm.plugin.version}</version>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -65,13 +85,83 @@
             </plugins>
         </pluginManagement>
     </build>
-    
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <activation>
+                <property>
+                    <name>release</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <configuration>
+                            <passphrase>${gpg.passphrase}</passphrase>
+                            <useAgent>${gpg.useAgent}</useAgent>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-maven-plugin</artifactId>
+                        <configuration>
+                            <auto>true</auto>
+                            <description>[nexus-maven-plugin] closing
+                                repository after release:perform
+                            </description>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>buildnumber-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>validate-scm</id>
+                                <goals>
+                                    <goal>create</goal>
+                                </goals>
+                                <!-- Disabled, doesn't support git -->
+                                <phase>none</phase>
+                                <configuration>
+                                    <doUpdate>true</doUpdate>
+                                    <doCheck>true</doCheck>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <inherited>true</inherited>
+                    </plugin>
+                </plugins>
+            </build>
+
+        </profile>
+    </profiles>
+
     <scm>
         <connection>scm:git:git://github.com/tremes/arquillian-container-se.git</connection>
         <developerConnection>scm:git:git@github.com:tremes/arquillian-container-se.git</developerConnection>
         <url>https://github.com/tremes/arquillian-container-se</url>
         <tag>HEAD</tag>
     </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>jboss-releases-repository</id>
+            <name>JBoss Releases Repository</name>
+            <url>${jboss.releases.repo.url}</url>
+        </repository>
+    </distributionManagement>
 
 
 </project>
