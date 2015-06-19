@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.jboss.arquillian.container</groupId>
     <artifactId>arquillian-container-se</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0.Alpha1</version>
     <packaging>pom</packaging>
     <name>Arquillian Container SE</name>
     <description>A Managed container starting a new JVM instance for each test archive. The classpath of the separate process is configurable and tests are executed using Arquillian JMX protocol.</description>
@@ -176,7 +175,7 @@
         <connection>scm:git:git://github.com/tremes/arquillian-container-se.git</connection>
         <developerConnection>scm:git:git@github.com:tremes/arquillian-container-se.git</developerConnection>
         <url>https://github.com/tremes/arquillian-container-se</url>
-        <tag>HEAD</tag>
+        <tag>1.0.0.Alpha1</tag>
     </scm>
 
     <distributionManagement>
