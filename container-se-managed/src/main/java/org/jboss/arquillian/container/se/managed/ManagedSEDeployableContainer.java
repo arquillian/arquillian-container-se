@@ -49,6 +49,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private static final String SERVER_MAIN_CLASS_FQN = "org.jboss.arquillian.container.se.server.Main";
 
     private boolean debugModeEnabled;
+    private boolean keepDeploymentArchives;
     private Process process;
     private List<File> materializedTestDeployments;
     private List<File> dependenciesJars;
@@ -68,6 +69,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         materializedTestDeployments = new ArrayList<>();
         dependenciesJars = new ArrayList<>();
         librariesPath = configuration.getLibrariesPath();
+        keepDeploymentArchives = configuration.isKeepDeploymentArchives();
         configureLogging(configuration);
     }
 
@@ -104,10 +106,11 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     @Override
     public void undeploy(Archive<?> archive) throws DeploymentException {
         LOGGER.info("Undeploying " + archive.getName());
-        for (File materializedDeployment : materializedTestDeployments) {
-            materializedDeployment.delete();
+        if (!keepDeploymentArchives) {
+            for (File materializedDeployment : materializedTestDeployments) {
+                materializedDeployment.delete();
+            }
         }
-        materializedTestDeployments = new ArrayList<>();
         //destroy process
         if (process != null) {
             process.destroy();
@@ -167,8 +170,12 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     private void materializeArchive(Archive<?> archive) {
         File deploymentFile = new File(TARGET.concat(File.separator).concat(archive.getName()));
-        archive.as(ZipExporter.class).exportTo(deploymentFile);
+        // deployment archive can already exist if it wasn't deleted within undeployment
+        if (!deploymentFile.exists()) {
+            archive.as(ZipExporter.class).exportTo(deploymentFile);
+        }
         materializedTestDeployments.add(deploymentFile);
+
     }
 
     private List<String> buildProcessCommand() {
@@ -188,7 +195,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         command.add("-Dcom.sun.management.jmxremote.port=" + port);
         command.add("-Dcom.sun.management.jmxremote.authenticate=false");
         command.add("-Dcom.sun.management.jmxremote.ssl=false");
-        
+
         if (debugModeEnabled) {
             command.add(X_DEBUG);
             command.add(DEBUG_AGENT_STRING);

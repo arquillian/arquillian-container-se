@@ -28,6 +28,7 @@ public class ManagedSEContainerConfiguration implements ContainerConfiguration {
     private int port = 9999;
     private String librariesPath;
     private Level logLevel = Level.INFO;
+    private boolean keepDeploymentArchives = false;
 
     public void validate() throws ConfigurationException {
     }
@@ -70,6 +71,14 @@ public class ManagedSEContainerConfiguration implements ContainerConfiguration {
 
     public void setLogLevel(String logLevel) {
         this.logLevel = Level.parse(logLevel);
+    }
+
+    public boolean isKeepDeploymentArchives() {
+        return keepDeploymentArchives;
+    }
+
+    public void setKeepDeploymentArchives(boolean keepDeploymentArchives) {
+        this.keepDeploymentArchives = keepDeploymentArchives;
     }
 
 }
