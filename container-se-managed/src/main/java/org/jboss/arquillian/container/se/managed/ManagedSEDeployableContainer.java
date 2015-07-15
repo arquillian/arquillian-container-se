@@ -217,12 +217,13 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     }
 
     private void logExecutedCommand(List<String> processCommand) {
-        if (LOGGER.getLevel().intValue() < Level.INFO.intValue()) {
-            String command = "";
+        if (LOGGER.isLoggable(Level.FINE)) {
+            StringBuilder builder = new StringBuilder();
             for (String s : processCommand) {
-                command += s + " ";
+                builder.append(s);
+                builder.append(" ");
             }
-            LOGGER.log(Level.FINE, "Executing command: " + command);
+            LOGGER.log(Level.FINE, "Executing command: " + builder);
         }
     }
 
