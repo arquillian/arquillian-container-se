@@ -16,6 +16,8 @@
  */
 package org.jboss.arquillian.container.se.managed;
 
+import java.util.logging.Level;
+
 import org.jboss.arquillian.container.spi.ConfigurationException;
 import org.jboss.arquillian.container.spi.client.container.ContainerConfiguration;
 
@@ -25,6 +27,7 @@ public class ManagedSEContainerConfiguration implements ContainerConfiguration {
     private String host = "127.0.0.1";
     private int port = 9999;
     private String librariesPath;
+    private Level logLevel = Level.INFO;
 
     public void validate() throws ConfigurationException {
     }
@@ -61,5 +64,12 @@ public class ManagedSEContainerConfiguration implements ContainerConfiguration {
         this.librariesPath = librariesPath;
     }
 
+    public Level getLogLevel() {
+        return logLevel;
+    }
+
+    public void setLogLevel(String logLevel) {
+        this.logLevel = Level.parse(logLevel);
+    }
 
 }

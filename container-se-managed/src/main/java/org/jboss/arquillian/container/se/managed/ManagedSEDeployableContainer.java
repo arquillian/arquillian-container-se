@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.jboss.arquillian.container.se.api.CompositeArchive;
@@ -39,7 +41,7 @@ import org.jboss.shrinkwrap.descriptor.api.Descriptor;
 
 public class ManagedSEDeployableContainer implements DeployableContainer<ManagedSEContainerConfiguration> {
 
-    private static final Logger log = Logger.getLogger(ManagedSEDeployableContainer.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ManagedSEDeployableContainer.class.getName());
     private static final String SYSPROP_KEY_JAVA_HOME = "java.home";
     private static final String X_DEBUG = "-Xdebug";
     private static final String DEBUG_AGENT_STRING = "-Xrunjdwp:server=y,transport=dt_socket,address=8787,suspend=y";
@@ -66,6 +68,14 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         materializedTestDeployments = new ArrayList<>();
         dependenciesJars = new ArrayList<>();
         librariesPath = configuration.getLibrariesPath();
+        configureLogging(configuration);
+    }
+
+    private void configureLogging(ManagedSEContainerConfiguration configuration) {
+        ConsoleHandler consoleHandler = new ConsoleHandler();
+        consoleHandler.setLevel(configuration.getLogLevel());
+        LOGGER.addHandler(consoleHandler);
+        LOGGER.setLevel(configuration.getLogLevel());
     }
 
     @Override
@@ -93,7 +103,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     @Override
     public void undeploy(Archive<?> archive) throws DeploymentException {
-        log.info("Undeploying " + archive.getName());
+        LOGGER.info("Undeploying " + archive.getName());
         for (File materializedDeployment : materializedTestDeployments) {
             materializedDeployment.delete();
         }
@@ -112,7 +122,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     @Override
     public ProtocolMetaData deploy(final Archive<?> archive) throws DeploymentException {
-        log.info("Deploying " + archive.getName());
+        LOGGER.info("Deploying " + archive.getName());
 
         if (archive instanceof CompositeArchive) {
             CompositeArchive composite = (CompositeArchive) archive;
@@ -125,8 +135,10 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         readJarFilesFromDirectory();
 
         List<String> processCommand = buildProcessCommand();
+        logExecutedCommand(processCommand);
         // Launch the process
         final ProcessBuilder processBuilder = new ProcessBuilder(processCommand);
+
         processBuilder.redirectErrorStream(true);
         processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
         processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
@@ -176,6 +188,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         command.add("-Dcom.sun.management.jmxremote.port=" + port);
         command.add("-Dcom.sun.management.jmxremote.authenticate=false");
         command.add("-Dcom.sun.management.jmxremote.ssl=false");
+        
         if (debugModeEnabled) {
             command.add(X_DEBUG);
             command.add(DEBUG_AGENT_STRING);
@@ -201,6 +214,16 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         });
         dependenciesJars.addAll(Arrays.asList(dep));
 
+    }
+
+    private void logExecutedCommand(List<String> processCommand) {
+        if (LOGGER.getLevel().intValue() < Level.INFO.intValue()) {
+            String command = "";
+            for (String s : processCommand) {
+                command += s + " ";
+            }
+            LOGGER.log(Level.FINE, "Executing command: " + command);
+        }
     }
 
 }
