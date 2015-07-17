@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -127,8 +129,10 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     public ProtocolMetaData deploy(final Archive<?> archive) throws DeploymentException {
         LOGGER.info("Deploying " + archive.getName());
 
+        Properties systemProperties = null;
         if (archive instanceof CompositeArchive) {
             CompositeArchive composite = (CompositeArchive) archive;
+            systemProperties = composite.getSystemProperties();
             for (Archive<?> item : composite.getItems()) {
                 materializeArchive(item);
             }
@@ -137,7 +141,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         }
         readJarFilesFromDirectory();
 
-        List<String> processCommand = buildProcessCommand();
+        List<String> processCommand = buildProcessCommand(systemProperties);
         logExecutedCommand(processCommand);
         // Launch the process
         final ProcessBuilder processBuilder = new ProcessBuilder(processCommand);
@@ -178,7 +182,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     }
 
-    private List<String> buildProcessCommand() {
+    private List<String> buildProcessCommand(Properties properties) {
         final List<String> command = new ArrayList<String>();
         final File javaHome = new File(System.getProperty(SYSPROP_KEY_JAVA_HOME));
         command.add(javaHome.getAbsolutePath() + File.separator + "bin" + File.separator + "java");
@@ -199,6 +203,11 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         if (debugModeEnabled) {
             command.add(X_DEBUG);
             command.add(DEBUG_AGENT_STRING);
+        }
+        if (properties != null) {
+            for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+                command.add("-D" + entry.getKey().toString() + "=" + entry.getValue().toString());
+            }
         }
         command.add(SERVER_MAIN_CLASS_FQN);
         return command;

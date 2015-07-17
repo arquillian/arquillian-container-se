@@ -1,5 +1,7 @@
 package org.jboss.arquillian.container.se.api;
 
+import java.util.Properties;
+
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 
@@ -36,6 +38,11 @@ public final class ClassPath {
             for (JavaArchive archive : archives) {
                 this.archive.addItem(archive);
             }
+            return this;
+        }
+
+        public Builder addSystemProperties(Properties properties) {
+            archive.setSystemProperties(properties);
             return this;
         }
 
