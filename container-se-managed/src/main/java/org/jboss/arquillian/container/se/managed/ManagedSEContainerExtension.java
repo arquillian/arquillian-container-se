@@ -18,6 +18,7 @@ package org.jboss.arquillian.container.se.managed;
 
 import org.jboss.arquillian.container.se.managed.jmx.CustomJMXProtocol;
 import org.jboss.arquillian.container.spi.client.container.DeployableContainer;
+import org.jboss.arquillian.container.test.spi.client.deployment.AuxiliaryArchiveAppender;
 import org.jboss.arquillian.container.test.spi.client.protocol.Protocol;
 import org.jboss.arquillian.core.spi.LoadableExtension;
 
@@ -25,7 +26,8 @@ public class ManagedSEContainerExtension implements LoadableExtension {
 
     @Override
     public void register(final ExtensionBuilder builder) {
-        builder.service(DeployableContainer.class, ManagedSEDeployableContainer.class)
-                .service(Protocol.class, CustomJMXProtocol.class);
+        builder.service(DeployableContainer.class, ManagedSEDeployableContainer.class);
+        builder.service(Protocol.class, CustomJMXProtocol.class);
+        builder.service(AuxiliaryArchiveAppender.class, SEContainerAppender.class);
     }
 }
