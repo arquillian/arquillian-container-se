@@ -78,6 +78,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private void configureLogging(ManagedSEContainerConfiguration configuration) {
         ConsoleHandler consoleHandler = new ConsoleHandler();
         consoleHandler.setLevel(configuration.getLogLevel());
+        LOGGER.setUseParentHandlers(false);
         LOGGER.addHandler(consoleHandler);
         LOGGER.setLevel(configuration.getLogLevel());
     }
