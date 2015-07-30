@@ -1,14 +1,14 @@
 package org.jboss.arquillian.container.se.server;
 
-import org.jboss.arquillian.container.spi.event.container.AfterUnDeploy;
 import org.jboss.arquillian.core.api.annotation.Observes;
+import org.jboss.arquillian.test.spi.event.suite.AfterSuite;
 
 /**
  * @author Tomas Remes
  */
-public class AfterUndeployObserver {
+public class AfterSuiteObserver {
 
-    public void afterUndeploy(@Observes AfterUnDeploy event){
+    public void afterSuite(@Observes AfterSuite event){
         Main.SYNC.countDown();
     }
 }
