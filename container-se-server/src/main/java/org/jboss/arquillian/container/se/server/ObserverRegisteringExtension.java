@@ -16,12 +16,12 @@
  */
 package org.jboss.arquillian.container.se.server;
 
-import org.jboss.arquillian.core.spi.LoadableExtension;
+import org.jboss.arquillian.container.test.spi.RemoteLoadableExtension;
 
-public class ObserverRegisteringExtension implements LoadableExtension {
+public class ObserverRegisteringExtension implements RemoteLoadableExtension {
 
     @Override
     public void register(final ExtensionBuilder builder) {
-       builder.observer(AfterUndeployObserver.class);
+       builder.observer(AfterSuiteObserver.class);
     }
 }
