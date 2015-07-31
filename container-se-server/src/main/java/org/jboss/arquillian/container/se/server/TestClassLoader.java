@@ -17,7 +17,7 @@ public class TestClassLoader implements JMXTestRunner.TestClassLoader {
 
     @Override
     public Class<?> loadTestClass(String className) throws ClassNotFoundException {
-        log.info("Loading class " + className);
+        log.info("Loading test class: " + className);
         return testClassLoader.loadClass(className);
     }
 }

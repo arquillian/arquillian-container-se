@@ -45,8 +45,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     private static final Logger LOGGER = Logger.getLogger(ManagedSEDeployableContainer.class.getName());
     private static final String SYSPROP_KEY_JAVA_HOME = "java.home";
-    private static final String X_DEBUG = "-Xdebug";
-    private static final String DEBUG_AGENT_STRING = "-Xrunjdwp:server=y,transport=dt_socket,address=8787,suspend=y";
+    private static final String DEBUG_AGENT_STRING = "-agentlib:jdwp=transport=dt_socket,address=8787,server=y,suspend=y";
     private static final String TARGET = "target";
     private static final String SERVER_MAIN_CLASS_FQN = "org.jboss.arquillian.container.se.server.Main";
 
@@ -114,7 +113,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
                 materializedDeployment.delete();
             }
         }
-        //destroy process
+        // Kill the forked JVM
         if (process != null) {
             process.destroy();
             try {
@@ -202,7 +201,6 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         command.add("-Dcom.sun.management.jmxremote.ssl=false");
 
         if (debugModeEnabled) {
-            command.add(X_DEBUG);
             command.add(DEBUG_AGENT_STRING);
         }
         if (properties != null) {
