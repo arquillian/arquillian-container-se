@@ -29,6 +29,7 @@ public class ManagedSEContainerConfiguration implements ContainerConfiguration {
     private String librariesPath;
     private Level logLevel = Level.INFO;
     private boolean keepDeploymentArchives = false;
+    private String additionalJavaOpts;
 
     public void validate() throws ConfigurationException {
     }
@@ -79,6 +80,14 @@ public class ManagedSEContainerConfiguration implements ContainerConfiguration {
 
     public void setKeepDeploymentArchives(boolean keepDeploymentArchives) {
         this.keepDeploymentArchives = keepDeploymentArchives;
+    }
+
+    public String getAdditionalJavaOpts() {
+        return additionalJavaOpts;
+    }
+
+    public void setAdditionalJavaOpts(String additionalJavaOpts) {
+        this.additionalJavaOpts = additionalJavaOpts;
     }
 
 }

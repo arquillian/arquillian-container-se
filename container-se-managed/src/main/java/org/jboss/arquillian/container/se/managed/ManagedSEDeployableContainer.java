@@ -21,6 +21,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -48,6 +49,8 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private static final String DEBUG_AGENT_STRING = "-agentlib:jdwp=transport=dt_socket,address=8787,server=y,suspend=y";
     private static final String TARGET = "target";
     private static final String SERVER_MAIN_CLASS_FQN = "org.jboss.arquillian.container.se.server.Main";
+    private static final String SYSTEM_PROPERTY_SWITCH = "-D";
+    private static final String EQUALS = "=";
 
     private boolean debugModeEnabled;
     private boolean keepDeploymentArchives;
@@ -57,6 +60,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private String host;
     private int port;
     private String librariesPath;
+    private List<String> additionalJavaOpts;
 
     @Override
     public Class<ManagedSEContainerConfiguration> getConfigurationClass() {
@@ -71,7 +75,20 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         dependenciesJars = new ArrayList<>();
         librariesPath = configuration.getLibrariesPath();
         keepDeploymentArchives = configuration.isKeepDeploymentArchives();
+        additionalJavaOpts = initAdditionalJavaOpts(configuration.getAdditionalJavaOpts());
         configureLogging(configuration);
+    }
+
+    private List<String> initAdditionalJavaOpts(String opts) {
+        if (opts == null || opts.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> additionalOpts = new ArrayList<>();
+        // TODO It may make sense to validate each option
+        for (String option : opts.split("\\s+")) {
+            additionalOpts.add(option);
+        }
+        return additionalOpts;
     }
 
     private void configureLogging(ManagedSEContainerConfiguration configuration) {
@@ -113,7 +130,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
                 materializedDeployment.delete();
             }
         }
-        // Kill the forked JVM
+        // Kill the subprocess (test JVM)
         if (process != null) {
             process.destroy();
             try {
@@ -203,13 +220,20 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         if (debugModeEnabled) {
             command.add(DEBUG_AGENT_STRING);
         }
+        for (String option : additionalJavaOpts) {
+            command.add(option);
+        }
         if (properties != null) {
             for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-                command.add("-D" + entry.getKey().toString() + "=" + entry.getValue().toString());
+                addSystemProperty(command, entry.getKey().toString(), entry.getValue().toString());
             }
         }
         command.add(SERVER_MAIN_CLASS_FQN);
         return command;
+    }
+
+    private void addSystemProperty(List<String> command, String key, String value) {
+        command.add(SYSTEM_PROPERTY_SWITCH + key + EQUALS + value);
     }
 
     private void readJarFilesFromDirectory() throws DeploymentException {
