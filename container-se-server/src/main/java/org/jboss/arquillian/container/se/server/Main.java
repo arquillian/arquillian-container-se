@@ -29,6 +29,8 @@ import org.jboss.arquillian.protocol.jmx.JMXTestRunner;
  */
 public class Main {
 
+    public static final String TEST_SUBPROCESS_TIMEOUT_SYSTEM_PROPERTY = "testSubprocessTimeout";
+
     private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
 
     private static final long DEFAULT_TIMEOUT = 60000L;
@@ -42,11 +44,10 @@ public class Main {
         } catch (JMException e) {
             throw new RuntimeException("Unable to register JMXTestRunner", e);
         }
-        // Wait for ManagedSEDeployableContainer to kill the forked JVM
-        // This process may not be terminated before with the client test finishes
+        // Wait for ManagedSEDeployableContainer to kill this subprocess/JVM
+        // This process may not be terminated before the JMX communication finishes
         try {
-            // TODO the timeout should be configurable
-            Thread.sleep(DEFAULT_TIMEOUT);
+            Thread.sleep(Long.getLong(TEST_SUBPROCESS_TIMEOUT_SYSTEM_PROPERTY, DEFAULT_TIMEOUT));
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted waiting for undeploy signal", e);
         }
