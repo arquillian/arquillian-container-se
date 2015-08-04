@@ -14,28 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.arquillian.container.se.server;
-
-import java.util.logging.Logger;
-
-import org.jboss.arquillian.protocol.jmx.JMXTestRunner;
+package org.jboss.arquillian.container.se.api;
 
 /**
- * @author Tomas Remes
+ * In rare cases, it may be necessary to supply a custom logic to initialize the test environment before the test is executed, e.g. to specify a class loader
+ * used to load the test class.
+ *
+ * @author Martin Kouba
  */
-public class TestClassLoader implements JMXTestRunner.TestClassLoader {
+public abstract class LaunchServices {
 
-    private final static Logger LOGGER = Logger.getLogger(TestClassLoader.class.getName());
+    public static final String SYSTEM_PROPERTY_LAUNCH_SERVICES_CLASS = LaunchServices.class.getName();
 
-    private final ClassLoader testClassLoader;
-
-    TestClassLoader(ClassLoader classLoader) {
-        testClassLoader = classLoader;
+    /**
+     *
+     * @return the class loader used to load the test class, or <code>null</code> if the default should be used
+     */
+    public ClassLoader getClassLoader() {
+        return null;
     }
 
-    @Override
-    public Class<?> loadTestClass(String className) throws ClassNotFoundException {
-        LOGGER.info("Loading test class [" + className + "] using [" + testClassLoader + "]");
-        return testClassLoader.loadClass(className);
+    /**
+     * This method is invoked before the test runner is initialized (i.e. before any test method is executed).
+     */
+    public void initialize() {
+        // No-op
     }
+
 }

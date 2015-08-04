@@ -10,9 +10,14 @@
 
     <artifactId>container-se-server</artifactId>
     <packaging>jar</packaging>
-    
+
     <dependencies>
 
+        <dependency>
+            <groupId>org.jboss.arquillian.container</groupId>
+            <artifactId>container-se-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.jboss.arquillian.protocol</groupId>
             <artifactId>arquillian-protocol-jmx</artifactId>
