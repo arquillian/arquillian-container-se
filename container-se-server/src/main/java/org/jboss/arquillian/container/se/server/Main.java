@@ -32,7 +32,7 @@ import org.jboss.arquillian.protocol.jmx.JMXTestRunner;
  */
 public class Main {
 
-    public static final String TEST_SUBPROCESS_TIMEOUT_SYSTEM_PROPERTY = "testSubprocessTimeout";
+    public static final String SYSTEM_PROPERTY_TEST_SUBPROCESS_TIMEOUT = "testSubprocessTimeout";
 
     private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
 
@@ -59,7 +59,7 @@ public class Main {
         // Wait for ManagedSEDeployableContainer to kill this subprocess/JVM
         // This process may not be terminated before the JMX communication finishes
         try {
-            Thread.sleep(Long.getLong(TEST_SUBPROCESS_TIMEOUT_SYSTEM_PROPERTY, DEFAULT_TIMEOUT));
+            Thread.sleep(Long.getLong(SYSTEM_PROPERTY_TEST_SUBPROCESS_TIMEOUT, DEFAULT_TIMEOUT));
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted waiting for undeploy signal", e);
         }
