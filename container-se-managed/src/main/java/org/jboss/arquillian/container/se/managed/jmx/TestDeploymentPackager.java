@@ -18,12 +18,12 @@ package org.jboss.arquillian.container.se.managed.jmx;
 
 import java.util.Collection;
 
-import org.jboss.arquillian.container.se.api.CompositeArchive;
+import org.jboss.arquillian.container.se.api.ClassPath;
 import org.jboss.arquillian.container.test.spi.TestDeployment;
 import org.jboss.arquillian.container.test.spi.client.deployment.DeploymentPackager;
 import org.jboss.arquillian.container.test.spi.client.deployment.ProtocolArchiveProcessor;
 import org.jboss.shrinkwrap.api.Archive;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 
 /**
  * @author Tomas Remes
@@ -32,20 +32,15 @@ public class TestDeploymentPackager implements DeploymentPackager {
 
     @Override
     public Archive<?> generateDeployment(TestDeployment testDeployment, Collection<ProtocolArchiveProcessor> collection) {
-
-        final Archive<?> appDeployment = testDeployment.getApplicationArchive();
-        if (appDeployment instanceof CompositeArchive) {
-            CompositeArchive composite = (CompositeArchive) appDeployment;
-            for (Archive<?> archive : testDeployment.getAuxiliaryArchives()) {
-                composite.addItem(archive);
+        Archive<?> applicationArchive = testDeployment.getApplicationArchive();
+        boolean isClassPath = ClassPath.isRepresentedBy(applicationArchive);
+        for (Archive<?> auxiliaryArchive : testDeployment.getAuxiliaryArchives()) {
+            if (isClassPath) {
+                applicationArchive.add(auxiliaryArchive, ClassPath.ROOT_ARCHIVE_PATH, ZipExporter.class);
+            } else {
+                applicationArchive.merge(auxiliaryArchive);
             }
-            return appDeployment;
-        } else {
-            final JavaArchive archive = appDeployment.as(JavaArchive.class);
-            for (final Archive<?> auxArchive : testDeployment.getAuxiliaryArchives()) {
-                archive.merge(auxArchive);
-            }
-            return archive;
         }
+        return applicationArchive;
     }
 }

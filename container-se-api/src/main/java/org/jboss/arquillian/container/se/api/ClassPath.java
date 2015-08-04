@@ -16,54 +16,102 @@
  */
 package org.jboss.arquillian.container.se.api;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Properties;
 
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ArchivePath;
+import org.jboss.shrinkwrap.api.ArchivePaths;
+import org.jboss.shrinkwrap.api.GenericArchive;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 
 /**
- * Represents a collection of archives that are available on classpath to the child JVM process when running using the SE container.
- * Use the builder to collect all the archives that should be made available on classpath.
+ * Represents a collection of archives that are available on classpath to the child JVM process when running using the SE container. Use the builder to collect
+ * all the archives that should be made available on classpath.
  *
  * @author Tomas Remes
  * @author Jozef Hartinger
  */
 public final class ClassPath {
 
+    public static final String ROOT_ARCHIVE_PATH = "/";
+
+    public static final ArchivePath SYSTEM_PROPERTIES_ARCHIVE_PATH = ArchivePaths.create(ROOT_ARCHIVE_PATH + "system.properties");
+
+    private static final ArchivePath MARKER_FILE_ARCHIVE_PATH = ArchivePaths.create("META-INF/arquillian.se.container.ClassPath");
+
     private ClassPath() {
     }
 
+    /**
+     *
+     * @return a new instance of class path builder
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * The builder should not be reused.
+     */
     public static final class Builder {
 
-        private final CompositeArchive archive;
+        private final GenericArchive archive;
+
+        private Properties systemProperties;
 
         private Builder() {
-            archive = new CompositeArchive();
+            this.archive = ShrinkWrap.create(GenericArchive.class).add(EmptyAsset.INSTANCE, MARKER_FILE_ARCHIVE_PATH);
+            this.systemProperties = new Properties();
         }
 
         public Builder add(JavaArchive archive) {
-            this.archive.addItem(archive);
+            this.archive.add(archive, ROOT_ARCHIVE_PATH, ZipExporter.class);
             return this;
         }
 
         public Builder add(JavaArchive... archives) {
             for (JavaArchive archive : archives) {
-                this.archive.addItem(archive);
+                this.archive.add(archive, ROOT_ARCHIVE_PATH, ZipExporter.class);
             }
             return this;
         }
 
-        public Builder addSystemProperties(Properties properties) {
-            archive.setSystemProperties(properties);
+        public Builder setSystemProperties(Properties systemProperties) {
+            this.systemProperties = systemProperties;
+            return this;
+        }
+
+        public Builder addSystemProperty(String key, String value) {
+            this.systemProperties.setProperty(key, value);
             return this;
         }
 
         public Archive<?> build() {
+            if (systemProperties != null && !systemProperties.isEmpty()) {
+                StringWriter writer = new StringWriter();
+                try {
+                    systemProperties.store(writer, null);
+                } catch (IOException e) {
+                    throw new RuntimeException("Cannot add system properties", e);
+                }
+                this.archive.add(new StringAsset(writer.toString()), SYSTEM_PROPERTIES_ARCHIVE_PATH);
+            }
             return archive;
         }
+    }
+
+    /**
+     *
+     * @param archive
+     * @return <code>true</code> if the given archive represents a class path, <code>false</code> otherwise
+     */
+    public static boolean isRepresentedBy(Archive<?> archive) {
+        return archive.contains(MARKER_FILE_ARCHIVE_PATH);
     }
 }

@@ -26,7 +26,7 @@ public class CompositeClassPathWithPropertiesTest {
         properties.put(KEY1, VALUE1);
         properties.put(KEY2, VALUE2);
         final JavaArchive test = ShrinkWrap.create(JavaArchive.class, "test.jar").addClass(CompositeClassPathWithPropertiesTest.class);
-        return ClassPath.builder().add(test).addSystemProperties(properties).build();
+        return ClassPath.builder().add(test).setSystemProperties(properties).build();
     }
 
     @Test

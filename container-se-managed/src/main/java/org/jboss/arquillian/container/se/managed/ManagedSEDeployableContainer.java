@@ -19,6 +19,7 @@ package org.jboss.arquillian.container.se.managed;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,7 +30,7 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.jboss.arquillian.container.se.api.CompositeArchive;
+import org.jboss.arquillian.container.se.api.ClassPath;
 import org.jboss.arquillian.container.se.managed.jmx.CustomJMXProtocol;
 import org.jboss.arquillian.container.se.managed.util.ServerAwait;
 import org.jboss.arquillian.container.spi.client.container.DeployableContainer;
@@ -39,6 +40,8 @@ import org.jboss.arquillian.container.spi.client.protocol.ProtocolDescription;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.JMXContext;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.ProtocolMetaData;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.Node;
+import org.jboss.shrinkwrap.api.asset.ArchiveAsset;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.descriptor.api.Descriptor;
 
@@ -146,16 +149,18 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     public ProtocolMetaData deploy(final Archive<?> archive) throws DeploymentException {
         LOGGER.info("Deploying " + archive.getName());
 
-        Properties systemProperties = null;
-        if (archive instanceof CompositeArchive) {
-            CompositeArchive composite = (CompositeArchive) archive;
-            systemProperties = composite.getSystemProperties();
-            for (Archive<?> item : composite.getItems()) {
-                materializeArchive(item);
+        if (ClassPath.isRepresentedBy(archive)) {
+            for (Node child : archive.get(ClassPath.ROOT_ARCHIVE_PATH).getChildren()) {
+                if (child.getAsset() instanceof ArchiveAsset) {
+                    ArchiveAsset archiveAsset = (ArchiveAsset) child.getAsset();
+                    materializeArchive(archiveAsset.getArchive());
+                }
             }
         } else {
             materializeArchive(archive);
         }
+
+        Properties systemProperties = getSystemProperties(archive);
         readJarFilesFromDirectory();
 
         List<String> processCommand = buildProcessCommand(systemProperties);
@@ -182,6 +187,20 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         ProtocolMetaData protocolMetaData = new ProtocolMetaData();
         protocolMetaData.addContext(new JMXContext(host, port));
         return protocolMetaData;
+    }
+
+    private Properties getSystemProperties(final Archive<?> archive) throws DeploymentException {
+        Node systemPropertiesNode = archive.get(ClassPath.SYSTEM_PROPERTIES_ARCHIVE_PATH);
+        if (systemPropertiesNode != null) {
+            try (InputStream in = systemPropertiesNode.getAsset().openStream()) {
+                Properties systemProperties = new Properties();
+                systemProperties.load(in);
+                return systemProperties;
+            } catch (IOException e) {
+                throw new DeploymentException("Could not load system properties", e);
+            }
+        }
+        return null;
     }
 
     private boolean serverAwait(String host, int port, int waitTime) {
