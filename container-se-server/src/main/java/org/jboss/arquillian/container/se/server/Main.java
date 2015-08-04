@@ -17,15 +17,18 @@
 package org.jboss.arquillian.container.se.server;
 
 import java.lang.management.ManagementFactory;
+import java.security.PrivilegedActionException;
 import java.util.logging.Logger;
 
 import javax.management.JMException;
 import javax.management.MBeanServer;
 
+import org.jboss.arquillian.container.se.api.LaunchServices;
 import org.jboss.arquillian.protocol.jmx.JMXTestRunner;
 
 /**
  * @author Tomas Remes
+ * @author Martin Kouba
  */
 public class Main {
 
@@ -36,14 +39,23 @@ public class Main {
     private static final long DEFAULT_TIMEOUT = 60000L;
 
     public static void main(String[] args) {
-        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+
+        LaunchServices launchServices = getLaunchServices();
+        launchServices.initialize();
+
         try {
-            JMXTestRunner testRunner = new JMXTestRunner(new TestClassLoader(Main.class.getClassLoader()));
+            MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            ClassLoader classLoader = launchServices.getClassLoader();
+            if (classLoader == null) {
+                classLoader = getDefaultClassLoader();
+            }
+            JMXTestRunner testRunner = new JMXTestRunner(new TestClassLoader(classLoader));
             testRunner.registerMBean(mbs);
             LOGGER.info("JMXTestRunner initialized");
         } catch (JMException e) {
             throw new RuntimeException("Unable to register JMXTestRunner", e);
         }
+
         // Wait for ManagedSEDeployableContainer to kill this subprocess/JVM
         // This process may not be terminated before the JMX communication finishes
         try {
@@ -52,4 +64,33 @@ public class Main {
             throw new RuntimeException("Interrupted waiting for undeploy signal", e);
         }
     }
+
+    private static LaunchServices getLaunchServices() {
+        final LaunchServices launchServices;
+        String launchServicesClass = System.getProperty(LaunchServices.SYSTEM_PROPERTY_LAUNCH_SERVICES_CLASS);
+        if (launchServicesClass != null) {
+            try {
+                launchServices = (LaunchServices) SecurityActions.newInstance(SecurityActions.getClassLoader(Main.class).loadClass(launchServicesClass));
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | PrivilegedActionException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            launchServices = new DefaultLaunchServices();
+        }
+        return launchServices;
+    }
+
+    private static class DefaultLaunchServices extends LaunchServices {
+
+        @Override
+        public ClassLoader getClassLoader() {
+            return getDefaultClassLoader();
+        }
+
+    }
+
+    private static ClassLoader getDefaultClassLoader() {
+        return SecurityActions.getClassLoader(Main.class);
+    }
+
 }

@@ -16,6 +16,7 @@
  */
 package org.jboss.arquillian.container.se.managed;
 
+import org.jboss.arquillian.container.se.api.LaunchServices;
 import org.jboss.arquillian.container.se.server.Main;
 import org.jboss.arquillian.container.test.spi.client.deployment.CachedAuxilliaryArchiveAppender;
 import org.jboss.shrinkwrap.api.Archive;
@@ -33,6 +34,7 @@ public class SEContainerAppender extends CachedAuxilliaryArchiveAppender {
     protected Archive<?> buildArchive() {
         return ShrinkWrap.create(JavaArchive.class, "arquillian-container-se.jar")
                 .addPackage(Main.class.getPackage())
+                .addClass(LaunchServices.class)
                 .addPackage("org.jboss.arquillian.protocol.jmx");
     }
 
