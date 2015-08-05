@@ -17,8 +17,10 @@
 package org.jboss.arquillian.container.se.api;
 
 /**
- * In rare cases, it may be necessary to supply a custom logic to initialize the test environment before the test is executed, e.g. to specify a class loader
- * used to load the test class.
+ * In rare cases, it may be necessary to supply a custom logic to initialize the test environment before the test is executed and even before the test class is
+ * loaded. E.g. to specify a class loader used to load the test class.
+ * <p>
+ * Implementation must have a public constructor with no parameters. Exactly one instance is created per each test class.
  *
  * @author Martin Kouba
  */
@@ -35,7 +37,7 @@ public abstract class LaunchServices {
     }
 
     /**
-     * This method is invoked before the test runner is initialized (i.e. before any test method is executed).
+     * This method is invoked before the test runner is initialized and before the test class is loaded (and before any test method is executed).
      */
     public void initialize() {
         // No-op
