@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.jboss.arquillian.container</groupId>
@@ -7,7 +8,9 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Arquillian Container SE</name>
-    <description>A Managed container starting a new JVM instance for each test archive. The classpath of the separate process is configurable and tests are executed using Arquillian JMX protocol.</description>
+    <description>A Managed container starting a new JVM instance for each test archive. The classpath of the separate process is configurable and tests are
+        executed using Arquillian JMX protocol.
+    </description>
 
     <modules>
         <module>container-se-api</module>
@@ -45,6 +48,11 @@
         <developer>
             <name>Jozef Hartinger</name>
             <email>jharting@redhat.com</email>
+            <organization>Red Hat Inc.</organization>
+        </developer>
+        <developer>
+            <name>Martin Kouba</name>
+            <email>mkouba@redhat.com</email>
             <organization>Red Hat Inc.</organization>
         </developer>
     </developers>
