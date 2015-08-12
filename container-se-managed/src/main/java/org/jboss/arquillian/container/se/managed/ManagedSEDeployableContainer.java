@@ -23,9 +23,12 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -224,11 +227,13 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         command.add(javaHome.getAbsolutePath() + File.separator + "bin" + File.separator + "java");
         command.add("-cp");
         StringBuilder builder = new StringBuilder();
-        for (File materializedDeployment : materializedTestDeployments) {
-            builder.append(File.pathSeparator + TARGET + File.separator + materializedDeployment.getName());
-        }
-        for (File dependencyJar : dependenciesJars) {
-            builder.append(File.pathSeparator + dependencyJar.getPath());
+        Set<File> classPathEntries = new HashSet<>(materializedTestDeployments);
+        classPathEntries.addAll(dependenciesJars);
+        for (Iterator<File> iterator = classPathEntries.iterator(); iterator.hasNext();) {
+            builder.append(iterator.next().getPath());
+            if(iterator.hasNext()) {
+                builder.append(File.pathSeparator);
+            }
         }
         command.add(builder.toString());
         command.add("-Dcom.sun.management.jmxremote");
