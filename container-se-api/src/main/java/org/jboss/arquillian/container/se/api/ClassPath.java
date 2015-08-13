@@ -71,13 +71,12 @@ public final class ClassPath {
         }
 
         public Builder add(JavaArchive archive) {
-            this.archive.add(archive, ROOT_ARCHIVE_PATH, ZipExporter.class);
-            return this;
+            return addArchive(archive);
         }
 
         public Builder add(JavaArchive... archives) {
             for (JavaArchive archive : archives) {
-                this.archive.add(archive, ROOT_ARCHIVE_PATH, ZipExporter.class);
+                addArchive(archive);
             }
             return this;
         }
@@ -89,6 +88,21 @@ public final class ClassPath {
 
         public Builder addSystemProperty(String key, String value) {
             this.systemProperties.setProperty(key, value);
+            return this;
+        }
+
+        /**
+         *
+         * @param name
+         * @return the builder used to construct a virtual class path directory
+         * @see ClassPathDirectory.Builder#buildAndUp()
+         */
+        public ClassPathDirectory.Builder addDirectory(String name) {
+            return ClassPathDirectory.builder(name, this);
+        }
+
+        Builder addArchive(Archive<?> archive) {
+            this.archive.add(archive, ROOT_ARCHIVE_PATH, ZipExporter.class);
             return this;
         }
 
