@@ -7,6 +7,9 @@
       <protocol type="simple-jmx" />
       <configuration>
          <property name="additionalJavaOpts">-Dtest.foo=false</property>
+         <property name="logLevel">INFO</property>
+         <property name="debug">false</property>
+         <property name="keepDeploymentArchives">false</property>
       </configuration>
    </container>
 
