@@ -299,6 +299,10 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
             if (child.getAsset() == null) {
                 materializeSubdirectories(entryDirectory, child);
             } else {
+                if (ClassPathDirectory.isMarkerFileArchivePath(child.getPath())) {
+                    // Do not materialize the marker file
+                    continue;
+                }
                 // E.g. META-INF/my-super-descriptor.xml
                 File resourceFile = new File(entryDirectory, child.getPath().get().replace(DELIMITER_RESOURCE_PATH, File.separatorChar));
                 File resoureDirectory = resourceFile.getParentFile();

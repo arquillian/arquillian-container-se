@@ -86,4 +86,8 @@ public final class ClassPathDirectory {
         return archive.contains(MARKER_FILE_ARCHIVE_PATH);
     }
 
+    public static boolean isMarkerFileArchivePath(ArchivePath path) {
+        return path.equals(MARKER_FILE_ARCHIVE_PATH);
+    }
+
 }
