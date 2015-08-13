@@ -149,6 +149,9 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     public ProtocolMetaData deploy(final Archive<?> archive) throws DeploymentException {
         LOGGER.info("Deploying " + archive.getName());
 
+        // First of all clear the list of previously materialized deployments - otherwise the class path would grow indefinitely
+        materializedTestDeployments.clear();
+
         if (ClassPath.isRepresentedBy(archive)) {
             for (Node child : archive.get(ClassPath.ROOT_ARCHIVE_PATH).getChildren()) {
                 if (child.getAsset() instanceof ArchiveAsset) {
