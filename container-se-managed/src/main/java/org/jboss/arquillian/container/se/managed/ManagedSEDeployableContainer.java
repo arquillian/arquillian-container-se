@@ -17,9 +17,16 @@
 package org.jboss.arquillian.container.se.managed;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +41,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.jboss.arquillian.container.se.api.ClassPath;
+import org.jboss.arquillian.container.se.api.ClassPathDirectory;
 import org.jboss.arquillian.container.se.managed.jmx.CustomJMXProtocol;
 import org.jboss.arquillian.container.se.managed.util.ServerAwait;
 import org.jboss.arquillian.container.spi.client.container.DeployableContainer;
@@ -45,6 +53,8 @@ import org.jboss.arquillian.container.spi.client.protocol.metadata.ProtocolMetaD
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.Node;
 import org.jboss.shrinkwrap.api.asset.ArchiveAsset;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.asset.ClassAsset;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.descriptor.api.Descriptor;
 
@@ -57,11 +67,14 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private static final String SERVER_MAIN_CLASS_FQN = "org.jboss.arquillian.container.se.server.Main";
     private static final String SYSTEM_PROPERTY_SWITCH = "-D";
     private static final String EQUALS = "=";
+    private static final char DELIMITER_RESOURCE_PATH = '/';
+    private static final char DELIMITER_CLASS_NAME_PATH = '.';
+    private static final String EXTENSION_CLASS = ".class";
 
     private boolean debugModeEnabled;
     private boolean keepDeploymentArchives;
     private Process process;
-    private List<File> materializedTestDeployments;
+    private List<File> materializedFiles;
     private List<File> dependenciesJars;
     private String host;
     private int port;
@@ -77,7 +90,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         debugModeEnabled = configuration.isDebug();
         host = configuration.getHost();
         port = configuration.getPort();
-        materializedTestDeployments = new ArrayList<>();
+        materializedFiles = new ArrayList<>();
         dependenciesJars = new ArrayList<>();
         librariesPath = configuration.getLibrariesPath();
         keepDeploymentArchives = configuration.isKeepDeploymentArchives();
@@ -132,8 +145,16 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     public void undeploy(Archive<?> archive) throws DeploymentException {
         LOGGER.info("Undeploying " + archive.getName());
         if (!keepDeploymentArchives) {
-            for (File materializedDeployment : materializedTestDeployments) {
-                materializedDeployment.delete();
+            for (File materializedFile : materializedFiles) {
+                if (materializedFile.isDirectory()) {
+                    try {
+                        deleteRecursively(materializedFile.toPath());
+                    } catch (IOException e) {
+                        LOGGER.warning("Could not delete materialized directory: " + materializedFile);
+                    }
+                } else {
+                    materializedFile.delete();
+                }
             }
         }
         // Kill the subprocess (test JVM)
@@ -153,13 +174,17 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         LOGGER.info("Deploying " + archive.getName());
 
         // First of all clear the list of previously materialized deployments - otherwise the class path would grow indefinitely
-        materializedTestDeployments.clear();
+        materializedFiles.clear();
 
         if (ClassPath.isRepresentedBy(archive)) {
             for (Node child : archive.get(ClassPath.ROOT_ARCHIVE_PATH).getChildren()) {
-                if (child.getAsset() instanceof ArchiveAsset) {
-                    ArchiveAsset archiveAsset = (ArchiveAsset) child.getAsset();
-                    materializeArchive(archiveAsset.getArchive());
+                Asset asset = child.getAsset();
+                if (asset instanceof ArchiveAsset) {
+                    Archive<?> assetArchive = ((ArchiveAsset) asset).getArchive();
+                    if (ClassPathDirectory.isRepresentedBy(assetArchive)) {
+                        materializeDirectory(assetArchive);
+                    } else
+                        materializeArchive(assetArchive);
                 }
             }
         } else {
@@ -220,8 +245,73 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         if (!deploymentFile.exists()) {
             archive.as(ZipExporter.class).exportTo(deploymentFile);
         }
-        materializedTestDeployments.add(deploymentFile);
+        materializedFiles.add(deploymentFile);
+    }
 
+    private void materializeDirectory(Archive<?> archive) throws DeploymentException {
+        if (archive.getContent().isEmpty()) {
+            // Do not materialize an empty directory
+            return;
+        }
+        File entryDirectory = new File(TARGET.concat(File.separator).concat(archive.getName()));
+        try {
+            if (entryDirectory.exists()) {
+                // Always delete previous content
+                deleteContent(entryDirectory.toPath());
+            } else {
+                if (!entryDirectory.mkdirs()) {
+                    throw new DeploymentException("Could not create class path directory: " + entryDirectory);
+                }
+            }
+            for (Node child : archive.get(ClassPath.ROOT_ARCHIVE_PATH).getChildren()) {
+                Asset asset = child.getAsset();
+                if (asset instanceof ClassAsset) {
+                    materializeClass(entryDirectory, (ClassAsset) asset);
+                } else if (asset == null) {
+                    materializeSubdirectories(entryDirectory, child);
+                }
+            }
+        } catch (IOException e) {
+            throw new DeploymentException("Could not materialize class path directory: " + archive.getName(), e);
+        }
+        materializedFiles.add(entryDirectory);
+    }
+
+    private void materializeClass(File entryDirectory, ClassAsset classAsset) throws DeploymentException, IOException {
+        File classDirectory;
+        if (classAsset.getSource().getPackage() != null) {
+            classDirectory = new File(entryDirectory, classAsset.getSource().getPackage().getName().replace(DELIMITER_CLASS_NAME_PATH, File.separatorChar));
+            if (!classDirectory.mkdirs()) {
+                throw new DeploymentException("Could not create class package directory: " + classDirectory);
+            }
+        } else {
+            classDirectory = entryDirectory;
+        }
+        File classFile = new File(classDirectory, classAsset.getSource().getSimpleName().concat(EXTENSION_CLASS));
+        classFile.createNewFile();
+        try (InputStream in = classAsset.openStream(); OutputStream out = new FileOutputStream(classFile)) {
+            copy(in, out);
+        }
+    }
+
+    private void materializeSubdirectories(File entryDirectory, Node node) throws DeploymentException, IOException {
+        for (Node child : node.getChildren()) {
+            if (child.getAsset() == null) {
+                materializeSubdirectories(entryDirectory, child);
+            } else {
+                // E.g. META-INF/my-super-descriptor.xml
+                File resourceFile = new File(entryDirectory, child.getPath().get().replace(DELIMITER_RESOURCE_PATH, File.separatorChar));
+                File resoureDirectory = resourceFile.getParentFile();
+                if (!resoureDirectory.exists() && !resoureDirectory.mkdirs()) {
+                    throw new DeploymentException("Could not create class path directory: " + entryDirectory);
+                }
+                resourceFile.createNewFile();
+                try (InputStream in = child.getAsset().openStream(); OutputStream out = new FileOutputStream(resourceFile)) {
+                    copy(in, out);
+                }
+                child.getPath().get();
+            }
+        }
     }
 
     private List<String> buildProcessCommand(Properties properties) {
@@ -230,7 +320,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         command.add(javaHome.getAbsolutePath() + File.separator + "bin" + File.separator + "java");
         command.add("-cp");
         StringBuilder builder = new StringBuilder();
-        Set<File> classPathEntries = new HashSet<>(materializedTestDeployments);
+        Set<File> classPathEntries = new HashSet<>(materializedFiles);
         classPathEntries.addAll(dependenciesJars);
         for (Iterator<File> iterator = classPathEntries.iterator(); iterator.hasNext();) {
             builder.append(iterator.next().getPath());
@@ -291,6 +381,41 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
             }
             LOGGER.log(Level.FINE, "Executing command: " + builder);
         }
+    }
+
+    private void copy(InputStream in, OutputStream out) throws IOException {
+        final byte[] buffer = new byte[8192];
+        int n = 0;
+        while (-1 != (n = in.read(buffer))) {
+            out.write(buffer, 0, n);
+        }
+        out.flush();
+    }
+
+    private void deleteRecursively(Path directory) throws IOException {
+        Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    private void deleteContent(Path directory) throws IOException {
+        Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
 }
