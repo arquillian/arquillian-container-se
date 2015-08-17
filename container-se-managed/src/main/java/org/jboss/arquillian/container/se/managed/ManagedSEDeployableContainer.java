@@ -241,10 +241,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     private void materializeArchive(Archive<?> archive) {
         File deploymentFile = new File(TARGET.concat(File.separator).concat(archive.getName()));
-        // deployment archive can already exist if it wasn't deleted within undeployment
-        if (!deploymentFile.exists()) {
-            archive.as(ZipExporter.class).exportTo(deploymentFile);
-        }
+        archive.as(ZipExporter.class).exportTo(deploymentFile, true);
         materializedFiles.add(deploymentFile);
     }
 
@@ -326,9 +323,9 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         StringBuilder builder = new StringBuilder();
         Set<File> classPathEntries = new HashSet<>(materializedFiles);
         classPathEntries.addAll(dependenciesJars);
-        for (Iterator<File> iterator = classPathEntries.iterator(); iterator.hasNext();) {
+        for (Iterator<File> iterator = classPathEntries.iterator(); iterator.hasNext(); ) {
             builder.append(iterator.next().getPath());
-            if(iterator.hasNext()) {
+            if (iterator.hasNext()) {
                 builder.append(File.pathSeparator);
             }
         }
