@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,21 +30,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.management.MBeanServerConnection;
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
+
 import org.jboss.arquillian.container.se.api.ClassPath;
 import org.jboss.arquillian.container.se.api.ClassPathDirectory;
 import org.jboss.arquillian.container.se.managed.jmx.CustomJMXProtocol;
+import org.jboss.arquillian.container.se.managed.util.Await;
 import org.jboss.arquillian.container.se.managed.util.FileDeploymentUtils;
-import org.jboss.arquillian.container.se.managed.util.ServerAwait;
 import org.jboss.arquillian.container.spi.client.container.DeployableContainer;
 import org.jboss.arquillian.container.spi.client.container.DeploymentException;
 import org.jboss.arquillian.container.spi.client.container.LifecycleException;
 import org.jboss.arquillian.container.spi.client.protocol.ProtocolDescription;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.JMXContext;
 import org.jboss.arquillian.container.spi.client.protocol.metadata.ProtocolMetaData;
+import org.jboss.arquillian.protocol.jmx.JMXTestRunnerMBean;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.Node;
 import org.jboss.shrinkwrap.api.asset.ArchiveAsset;
@@ -61,9 +70,6 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private static final String SERVER_MAIN_CLASS_FQN = "org.jboss.arquillian.container.se.server.Main";
     private static final String SYSTEM_PROPERTY_SWITCH = "-D";
     private static final String EQUALS = "=";
-    private static final char DELIMITER_RESOURCE_PATH = '/';
-    private static final char DELIMITER_CLASS_NAME_PATH = '.';
-    private static final String EXTENSION_CLASS = ".class";
 
     private boolean debugModeEnabled;
     private boolean keepDeploymentArchives;
@@ -204,9 +210,13 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         }
 
         int waitTime = debugModeEnabled ? 15 : 5;
-        boolean connected = serverAwait(host, port, waitTime);
-        if (!connected) {
+
+        // Wait for socket connection
+        if (!isServerStarted(host, port, waitTime)) {
             throw new DeploymentException("Child JVM process failed to start within " + waitTime + " seconds.");
+        }
+        if (!isJMXTestRunnerMBeanRegistered(host, port, waitTime)) {
+            throw new DeploymentException("JMXTestRunnerMBean not registered within " + waitTime + " seconds.");
         }
 
         ProtocolMetaData protocolMetaData = new ProtocolMetaData();
@@ -228,9 +238,33 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         return null;
     }
 
-    private boolean serverAwait(String host, int port, int waitTime) {
-        ServerAwait serverAwait = new ServerAwait(host, port, waitTime);
-        return serverAwait.run();
+    private boolean isServerStarted(final String host, final int port, int waitTime) {
+        return new Await(waitTime, new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                try (Socket ignored = new Socket(host, port)) {
+                    return true;
+                }
+            }
+        }).start();
+    }
+
+    private boolean isJMXTestRunnerMBeanRegistered(final String host, final int port, int waitTime) throws DeploymentException {
+        // Taken from org.jboss.arquillian.container.spi.client.protocol.metadata.JMXContext
+        final String jmxServiceUrl = "service:jmx:rmi:///jndi/rmi://" + host + ":" + port + "/jmxrmi";
+        try (JMXConnector jmxc = JMXConnectorFactory.connect(new JMXServiceURL(jmxServiceUrl), null)) {
+            final MBeanServerConnection mbsc = jmxc.getMBeanServerConnection();
+            return new Await(waitTime, new Callable<Boolean>() {
+                @Override
+                public Boolean call() throws Exception {
+                    mbsc.getObjectInstance(new ObjectName(JMXTestRunnerMBean.OBJECT_NAME));
+                    LOGGER.fine("JMXTestRunnerMBean registered with the remote MBean server at: " + jmxServiceUrl);
+                    return true;
+                }
+            }).start();
+        } catch (IOException e) {
+            throw new DeploymentException("Could not verify JMXTestRunnerMBean registration", e);
+        }
     }
 
     private void materializeArchive(Archive<?> archive) {
@@ -276,7 +310,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         StringBuilder builder = new StringBuilder();
         Set<File> classPathEntries = new HashSet<>(materializedFiles);
         classPathEntries.addAll(dependenciesJars);
-        for (Iterator<File> iterator = classPathEntries.iterator(); iterator.hasNext(); ) {
+        for (Iterator<File> iterator = classPathEntries.iterator(); iterator.hasNext();) {
             builder.append(iterator.next().getPath());
             if (iterator.hasNext()) {
                 builder.append(File.pathSeparator);
