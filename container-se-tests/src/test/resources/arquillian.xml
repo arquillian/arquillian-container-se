@@ -10,6 +10,7 @@
          <property name="logLevel">INFO</property>
          <property name="debug">false</property>
          <property name="keepDeploymentArchives">false</property>
+         <property name="waitTime">5</property>
       </configuration>
    </container>
 
