@@ -80,6 +80,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private int port;
     private String librariesPath;
     private List<String> additionalJavaOpts;
+    private int waitTime;
 
     @Override
     public Class<ManagedSEContainerConfiguration> getConfigurationClass() {
@@ -96,6 +97,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         keepDeploymentArchives = configuration.isKeepDeploymentArchives();
         additionalJavaOpts = initAdditionalJavaOpts(configuration.getAdditionalJavaOpts());
         configureLogging(configuration);
+        waitTime = configuration.getWaitTime() > 0 ? configuration.getWaitTime() : 5;
     }
 
     private List<String> initAdditionalJavaOpts(String opts) {
@@ -209,14 +211,14 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
             throw new DeploymentException("Could not start process", e);
         }
 
-        int waitTime = debugModeEnabled ? 15 : 5;
+        int finalWaitTime = debugModeEnabled ? (3 * waitTime) : waitTime;
 
         // Wait for socket connection
-        if (!isServerStarted(host, port, waitTime)) {
-            throw new DeploymentException("Child JVM process failed to start within " + waitTime + " seconds.");
+        if (!isServerStarted(host, port, finalWaitTime)) {
+            throw new DeploymentException("Child JVM process failed to start within " + finalWaitTime + " seconds.");
         }
-        if (!isJMXTestRunnerMBeanRegistered(host, port, waitTime)) {
-            throw new DeploymentException("JMXTestRunnerMBean not registered within " + waitTime + " seconds.");
+        if (!isJMXTestRunnerMBeanRegistered(host, port, finalWaitTime)) {
+            throw new DeploymentException("JMXTestRunnerMBean not registered within " + finalWaitTime + " seconds.");
         }
 
         ProtocolMetaData protocolMetaData = new ProtocolMetaData();

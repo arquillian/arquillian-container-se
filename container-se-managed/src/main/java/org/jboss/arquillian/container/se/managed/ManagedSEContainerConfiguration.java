@@ -30,10 +30,19 @@ public class ManagedSEContainerConfiguration implements ContainerConfiguration {
     private Level logLevel = Level.INFO;
     private boolean keepDeploymentArchives = false;
     private String additionalJavaOpts;
+    private int waitTime  = 5;
 
     public void validate() throws ConfigurationException {
     }
 
+    public void setWaitTime(int waitTime) {
+        this.waitTime = waitTime;
+    }
+    
+    public int getWaitTime() {
+        return waitTime;
+    }
+    
     public boolean isDebug() {
         return debug;
     }
