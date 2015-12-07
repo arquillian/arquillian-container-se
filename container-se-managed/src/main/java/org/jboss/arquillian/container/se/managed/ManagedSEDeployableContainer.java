@@ -97,7 +97,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         keepDeploymentArchives = configuration.isKeepDeploymentArchives();
         additionalJavaOpts = initAdditionalJavaOpts(configuration.getAdditionalJavaOpts());
         configureLogging(configuration);
-        waitTime = configuration.getWaitTime() > 0 ? configuration.getWaitTime() : 5;
+        waitTime = configuration.getWaitTime() > 0 ? configuration.getWaitTime() : 10;
     }
 
     private List<String> initAdditionalJavaOpts(String opts) {
