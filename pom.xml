@@ -4,7 +4,7 @@
 
     <groupId>org.jboss.arquillian.container</groupId>
     <artifactId>arquillian-container-se</artifactId>
-    <version>1.0.0.Final</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Arquillian Container SE</name>
     <description>A Managed container starting a new JVM instance for each test archive. The classpath of the separate process is configurable and tests are
@@ -182,7 +182,7 @@
         <connection>scm:git:git://github.com/tremes/arquillian-container-se.git</connection>
         <developerConnection>scm:git:git@github.com:tremes/arquillian-container-se.git</developerConnection>
         <url>https://github.com/tremes/arquillian-container-se</url>
-        <tag>1.0.0.Final</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>
