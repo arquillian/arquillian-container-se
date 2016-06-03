@@ -1,0 +1,34 @@
+== Arquillian-container-SE
+
+Managed container starting a new JVM instance for each test archive. The classpath of the separate process is configurable and tests are executed using Arquillian JMX protocol.
+
+=== How does it work
+Arquillian-container-SE is basically implementation of standard `org.jboss.arquillian.container.spi.client.container.DeployableContainer` which during its deploy method starts a new JVM process with hardcoded `org.jboss.arquillian.container.se.server.Main` class.
+Newly created process exposes remote JMX connection so that Arquillian could execute a test remotely. Main class of the child process doesn't do much. It creates new `org.jboss.arquillian.protocol.jmx.JMXTestRunner` MBean and registers it to MBean server. Tests are executed by this `JMXTestRunner`.
+
+You can use following *configuration properties*:
+
+[cols="3*", options="header"]
+|===
+| *Name* | *Description* | *Default value*
+| *additionalJavaOpts* | allows you to specify additional Java options e.g -Dtest.foo=false |
+| *logLevel* | define log level | INFO
+| *debug* | turn on debugging on port 8787 | false
+| *lib* | set a directory path from which all jars are automatically added to the classpath |
+| *keepDeploymentArchives* | keep your classpath artifacts after test execution | false
+| *waitTime* | time in seconds to wait for a start of the new process and `JMXTestRunner` MBean registration | 5
+|===
+
+=== Basic deployment example
+You can easily compose your classpath by using `org.jboss.arquillian.container.se.api.ClassPath` which provides you access to static `Builder` class. Using this builder you can add archives, classes and similar stuff you are used to from ShrinkWrap API to your test classpath.
+Additionally you can specify system properties via this builder. Basic test deployment method could look like following:
+
+[ source, java]
+----
+    @Deployment
+    public static Archive<?> createTestArchive() {
+        return ClassPath.builder()
+                .add(ShrinkWrap.create(BeanArchive.class)
+                        .addClasses(RequestScopedActiveInterceptorTest.class, Foo.class, Bar.class, Baz.class)).build();
+    }
+----
