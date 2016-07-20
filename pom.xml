@@ -179,9 +179,9 @@
     </profiles>
 
     <scm>
-        <connection>scm:git:git://github.com/tremes/arquillian-container-se.git</connection>
-        <developerConnection>scm:git:git@github.com:tremes/arquillian-container-se.git</developerConnection>
-        <url>https://github.com/tremes/arquillian-container-se</url>
+        <connection>scm:git:git://github.com/arquillian/arquillian-container-se.git</connection>
+        <developerConnection>scm:git:git@github.com:arquillian/arquillian-container-se.git</developerConnection>
+        <url>https://github.com/arquillian/arquillian-container-se</url>
         <tag>HEAD</tag>
     </scm>
 
