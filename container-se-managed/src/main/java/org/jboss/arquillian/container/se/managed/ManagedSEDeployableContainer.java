@@ -200,13 +200,11 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         logExecutedCommand(processCommand);
         // Launch the process
         final ProcessBuilder processBuilder = new ProcessBuilder(processCommand);
-
         processBuilder.redirectErrorStream(true);
-        processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
-        processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
         try {
             process = processBuilder.start();
+            new Thread(new ConsoleConsumer()).start();
         } catch (final IOException e) {
             throw new DeploymentException("Could not start process", e);
         }
@@ -312,7 +310,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         StringBuilder builder = new StringBuilder();
         Set<File> classPathEntries = new HashSet<>(materializedFiles);
         classPathEntries.addAll(dependenciesJars);
-        for (Iterator<File> iterator = classPathEntries.iterator(); iterator.hasNext();) {
+        for (Iterator<File> iterator = classPathEntries.iterator(); iterator.hasNext(); ) {
             builder.append(iterator.next().getPath());
             if (iterator.hasNext()) {
                 builder.append(File.pathSeparator);
@@ -371,6 +369,26 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
             }
             LOGGER.log(Level.FINE, "Executing command: " + builder);
         }
+    }
+
+    // taken from org.jboss.as.arquillian.container.managed.ManagedDeployableContainer
+    private class ConsoleConsumer implements Runnable {
+
+        @Override
+        public void run() {
+            final InputStream stream = process.getInputStream();
+
+            try {
+                byte[] buf = new byte[32];
+                int num;
+                // Do not try reading a line cos it considers '\r' end of line
+                while ((num = stream.read(buf)) != -1) {
+                    System.out.write(buf, 0, num);
+                }
+            } catch (IOException e) {
+            }
+        }
+
     }
 
 }
