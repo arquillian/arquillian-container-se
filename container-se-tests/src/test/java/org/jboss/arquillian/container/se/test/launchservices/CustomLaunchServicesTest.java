@@ -17,12 +17,20 @@
 package org.jboss.arquillian.container.se.test.launchservices;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+import java.nio.file.Files;
 
 import org.jboss.arquillian.container.se.api.ClassPath;
 import org.jboss.arquillian.container.se.api.LaunchServices;
+import org.jboss.arquillian.container.test.api.Deployer;
 import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.arquillian.junit.InSequence;
+import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -32,21 +40,48 @@ import org.junit.runner.RunWith;
 @RunWith(Arquillian.class)
 public class CustomLaunchServicesTest {
 
-    @Deployment
+    private static final String DEPLOYMENT_NAME = "custom_launch";
+
+    @Deployment(managed = false, name = DEPLOYMENT_NAME)
     public static Archive<?> createTestArchive() {
         return ClassPath.builder().add(ShrinkWrap.create(JavaArchive.class).addClasses(CustomLaunchServicesTest.class, CustomLaunchServices.class))
                 .addSystemProperty(LaunchServices.SYSTEM_PROPERTY_LAUNCH_SERVICES_CLASS, CustomLaunchServices.class.getName()).build();
     }
 
+    @ArquillianResource
+    private Deployer deployer;
+
+    @RunAsClient
+    @InSequence(1)
     @Test
-    public void testInitializeCalled() {
-        assertTrue(CustomLaunchServices.initializeCalled.get());
+    public void deploy() throws Exception {
+        File marker = markerFile();
+        if (marker.exists()) {
+            Files.delete(marker.toPath());
+        }
+        deployer.deploy(DEPLOYMENT_NAME);
     }
 
     @Test
-    public void testGetClassLoaderCalled() {
+    @InSequence(2)
+    public void testInitializeAndGetClassLoaderCalled() {
+        assertTrue(CustomLaunchServices.initializeCalled.get());
+        assertTrue(markerFile().exists());
         assertTrue(CustomLaunchServices.getClassLoaderCalled.get());
         assertEquals(CustomLaunchServices.class.getClassLoader(), CustomLaunchServicesTest.class.getClassLoader());
+    }
+
+    @RunAsClient
+    @InSequence(3)
+    @Test
+    public void undeploy() throws Exception {
+        deployer.undeploy(DEPLOYMENT_NAME);
+        // Marker file should be deleted
+        assertFalse(markerFile().exists());
+    }
+
+    private File markerFile() {
+        return new File(CustomLaunchServices.MARKER_FILE_PATH);
     }
 
 }

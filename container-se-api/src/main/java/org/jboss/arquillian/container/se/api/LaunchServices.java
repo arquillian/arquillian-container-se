@@ -17,10 +17,12 @@
 package org.jboss.arquillian.container.se.api;
 
 /**
- * In rare cases, it may be necessary to supply a custom logic to initialize the test environment before the test is executed and even before the test class is
- * loaded. E.g. to specify a class loader used to load the test class.
+ * Sometimes it might be useful to supply a custom logic to initialize the test environment before the test is executed (even before the test class is loaded,
+ * e.g. to specify a class loader used to load the test class) and to shut down the test environment properly.
  * <p>
- * Implementation must have a public constructor with no parameters. Exactly one instance is created per each test class.
+ * Implementation must have a public constructor with no parameters.
+ * <p>
+ * Exactly one instance is created per each test class/deployment.
  *
  * @author Martin Kouba
  */
@@ -40,6 +42,15 @@ public abstract class LaunchServices {
      * This method is invoked before the test runner is initialized and before the test class is loaded (and before any test method is executed).
      */
     public void initialize() {
+        // No-op
+    }
+
+    /**
+     * This method is invoked by a virtual-machine shutdown hook when the test subprocess/JVM is terminated.
+     *
+     * @see Runtime#addShutdownHook(Thread)
+     */
+    public void shutdown() {
         // No-op
     }
 

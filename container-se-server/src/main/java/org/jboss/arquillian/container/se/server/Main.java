@@ -42,6 +42,7 @@ public class Main {
 
         LaunchServices launchServices = getLaunchServices();
         launchServices.initialize();
+        Runtime.getRuntime().addShutdownHook(new ShutdownHook(launchServices));
 
         try {
             MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
@@ -58,11 +59,13 @@ public class Main {
 
         // Wait for ManagedSEDeployableContainer to kill this subprocess/JVM
         // This process may not be terminated before the JMX communication finishes
+        Long timeout = Long.getLong(SYSTEM_PROPERTY_TEST_SUBPROCESS_TIMEOUT, DEFAULT_TIMEOUT);
         try {
-            Thread.sleep(Long.getLong(SYSTEM_PROPERTY_TEST_SUBPROCESS_TIMEOUT, DEFAULT_TIMEOUT));
+            Thread.sleep(timeout);
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted waiting for undeploy signal", e);
         }
+        LOGGER.warning("Test subprocess timeout - VM not terminated within " + timeout + " ms");
     }
 
     private static LaunchServices getLaunchServices() {
@@ -91,6 +94,20 @@ public class Main {
 
     private static ClassLoader getDefaultClassLoader() {
         return SecurityActions.getClassLoader(Main.class);
+    }
+
+    private static class ShutdownHook extends Thread {
+
+        private final LaunchServices launchServices;
+
+        ShutdownHook(LaunchServices launchServices) {
+            this.launchServices = launchServices;
+        }
+
+        @Override
+        public void run() {
+            launchServices.shutdown();
+        }
     }
 
 }
