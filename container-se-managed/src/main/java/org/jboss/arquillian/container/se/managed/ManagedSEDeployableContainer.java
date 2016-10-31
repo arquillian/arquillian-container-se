@@ -16,13 +16,14 @@
  */
 package org.jboss.arquillian.container.se.managed;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -58,6 +59,7 @@ import org.jboss.shrinkwrap.api.Node;
 import org.jboss.shrinkwrap.api.asset.ArchiveAsset;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.asset.ClassAsset;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.descriptor.api.Descriptor;
 
@@ -75,7 +77,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
     private boolean keepDeploymentArchives;
     private Process process;
     private List<File> materializedFiles;
-    private List<File> dependenciesJars;
+    private Set<File> dependenciesJars;
     private String host;
     private int port;
     private String librariesPath;
@@ -92,8 +94,8 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         host = configuration.getHost();
         port = configuration.getPort();
         materializedFiles = new ArrayList<>();
-        dependenciesJars = new ArrayList<>();
         librariesPath = configuration.getLibrariesPath();
+        dependenciesJars = readJarFilesFromDirectory();
         keepDeploymentArchives = configuration.isKeepDeploymentArchives();
         additionalJavaOpts = initAdditionalJavaOpts(configuration.getAdditionalJavaOpts());
         configureLogging(configuration);
@@ -145,7 +147,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     @Override
     public void undeploy(Archive<?> archive) throws DeploymentException {
-        LOGGER.info("Undeploying " + archive.getName());
+        LOGGER.fine("Undeploying " + archive.getName());
         if (!keepDeploymentArchives) {
             for (File materializedFile : materializedFiles) {
                 if (materializedFile.isDirectory()) {
@@ -173,7 +175,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
 
     @Override
     public ProtocolMetaData deploy(final Archive<?> archive) throws DeploymentException {
-        LOGGER.info("Deploying " + archive.getName());
+        LOGGER.fine("Deploying " + archive.getName());
 
         // First of all clear the list of previously materialized deployments - otherwise the class path would grow indefinitely
         materializedFiles.clear();
@@ -193,10 +195,7 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
             materializeArchive(archive);
         }
 
-        Properties systemProperties = getSystemProperties(archive);
-        readJarFilesFromDirectory();
-
-        List<String> processCommand = buildProcessCommand(systemProperties);
+        List<String> processCommand = buildProcessCommand(getSystemProperties(archive), getFileClassPathEntries(archive));
         logExecutedCommand(processCommand);
         // Launch the process
         final ProcessBuilder processBuilder = new ProcessBuilder(processCommand);
@@ -222,6 +221,29 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         ProtocolMetaData protocolMetaData = new ProtocolMetaData();
         protocolMetaData.addContext(new JMXContext(host, port));
         return protocolMetaData;
+    }
+
+    private Set<File> getFileClassPathEntries(Archive<?> archive) {
+        Node node = archive.get(ClassPath.FILE_CLASSPATH_ENTRIES_ARCHIVE_PATH);
+        if (node != null && (node.getAsset() instanceof StringAsset)) {
+            Set<File> entries = new HashSet<>();
+            StringAsset asset = (StringAsset) node.getAsset();
+            BufferedReader reader = new BufferedReader(new StringReader(asset.getSource()));
+            String line;
+            try {
+                while ((line = reader.readLine()) != null) {
+                    File file = new File(line);
+                    if (file.canRead() && file.isFile()) {
+                        entries.add(file);
+                    }
+                }
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Unable to read file class path entries", e);
+                return Collections.emptySet();
+            }
+            return entries;
+        }
+        return Collections.emptySet();
     }
 
     private Properties getSystemProperties(final Archive<?> archive) throws DeploymentException {
@@ -302,13 +324,14 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         materializedFiles.add(entryDirectory);
     }
 
-    private List<String> buildProcessCommand(Properties properties) {
+    private List<String> buildProcessCommand(Properties properties, Set<File> fileClassPathEntries) {
         final List<String> command = new ArrayList<String>();
         final File javaHome = new File(System.getProperty(SYSPROP_KEY_JAVA_HOME));
         command.add(javaHome.getAbsolutePath() + File.separator + "bin" + File.separator + "java");
         command.add("-cp");
         StringBuilder builder = new StringBuilder();
         Set<File> classPathEntries = new HashSet<>(materializedFiles);
+        classPathEntries.addAll(fileClassPathEntries);
         classPathEntries.addAll(dependenciesJars);
         for (Iterator<File> iterator = classPathEntries.iterator(); iterator.hasNext(); ) {
             builder.append(iterator.next().getPath());
@@ -341,23 +364,24 @@ public class ManagedSEDeployableContainer implements DeployableContainer<Managed
         command.add(SYSTEM_PROPERTY_SWITCH + key + EQUALS + value);
     }
 
-    private void readJarFilesFromDirectory() throws DeploymentException {
+    private Set<File> readJarFilesFromDirectory() {
         if (librariesPath == null) {
-            return;
+            return Collections.emptySet();
         }
+        LOGGER.info("Add libraries from: " + librariesPath);
+        Set<File> libraries = new HashSet<>();
         File lib = new File(librariesPath);
         if (!lib.exists() || lib.isFile()) {
-            throw new DeploymentException("Cannot read files from " + librariesPath);
+            throw new IllegalStateException("Cannot read files from " + librariesPath);
         }
-
-        File[] dep = lib.listFiles(new FilenameFilter() {
+        File[] files = lib.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
                 return name.endsWith(".jar");
             }
         });
-        dependenciesJars.addAll(Arrays.asList(dep));
-
+        Collections.addAll(libraries, files);
+        return libraries;
     }
 
     private void logExecutedCommand(List<String> processCommand) {

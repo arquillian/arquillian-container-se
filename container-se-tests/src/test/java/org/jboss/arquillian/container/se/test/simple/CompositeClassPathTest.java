@@ -16,13 +16,17 @@
  */
 package org.jboss.arquillian.container.se.test.simple;
 
-import junit.framework.Assert;
+import static org.junit.Assert.assertEquals;
+
+import javax.enterprise.inject.IllegalProductException;
+
 import org.jboss.arquillian.container.se.api.ClassPath;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -34,11 +38,13 @@ public class CompositeClassPathTest {
         final JavaArchive test = ShrinkWrap.create(JavaArchive.class, "test.jar").addClass(CompositeClassPathTest.class);
         final JavaArchive foo = ShrinkWrap.create(JavaArchive.class, "foo.jar").addClass(Foo.class);
         final JavaArchive bar = ShrinkWrap.create(JavaArchive.class, "bar.jar").addClass(Bar.class);
-        return ClassPath.builder().add(foo, bar, test).build();
+        return ClassPath.builder().add(foo, bar, test)
+                .add(Maven.resolver().loadPomFromFile("pom.xml").resolve("javax.enterprise:cdi-api").withTransitivity().asFile()).build();
     }
 
     @Test
     public void test() {
-        Assert.assertEquals(2, new Foo().ping() + new Bar().ping());
+        assertEquals(2, new Foo().ping() + new Bar().ping());
+        new IllegalProductException("foo");
     }
 }
