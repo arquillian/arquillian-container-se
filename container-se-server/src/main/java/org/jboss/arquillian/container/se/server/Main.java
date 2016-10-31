@@ -51,7 +51,7 @@ public class Main {
             }
             JMXTestRunner testRunner = new JMXTestRunner(new TestClassLoader(classLoader));
             testRunner.registerMBean(mbs);
-            LOGGER.info("JMXTestRunner initialized");
+            LOGGER.info("JMXTestRunner initialized using [" + classLoader + "]");
         } catch (JMException e) {
             throw new RuntimeException("Unable to register JMXTestRunner", e);
         }

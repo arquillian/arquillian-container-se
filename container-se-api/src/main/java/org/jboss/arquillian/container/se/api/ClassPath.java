@@ -16,9 +16,12 @@
  */
 package org.jboss.arquillian.container.se.api;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ArchivePath;
@@ -31,8 +34,9 @@ import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 
 /**
- * Represents a collection of archives that are available on classpath to the child JVM process when running using the SE container. Use the builder to collect
- * all the archives that should be made available on classpath.
+ * Represents a collection of archives that are available on classpath to the child JVM process when running using the SE container.
+ * <p>
+ * Use the builder to collect all the archives that should be made available on classpath.
  *
  * @author Tomas Remes
  * @author Jozef Hartinger
@@ -42,6 +46,8 @@ public final class ClassPath {
     public static final String ROOT_ARCHIVE_PATH = "/";
 
     public static final ArchivePath SYSTEM_PROPERTIES_ARCHIVE_PATH = ArchivePaths.create(ROOT_ARCHIVE_PATH + "system.properties");
+
+    public static final ArchivePath FILE_CLASSPATH_ENTRIES_ARCHIVE_PATH = ArchivePaths.create(ROOT_ARCHIVE_PATH + "file-dependencies");
 
     private static final ArchivePath MARKER_FILE_ARCHIVE_PATH = ArchivePaths.create("META-INF/arquillian.se.container.ClassPath");
 
@@ -63,11 +69,14 @@ public final class ClassPath {
 
         private final GenericArchive archive;
 
+        private final Set<File> files;
+
         private Properties systemProperties;
 
         private Builder() {
             this.archive = ShrinkWrap.create(GenericArchive.class).add(EmptyAsset.INSTANCE, MARKER_FILE_ARCHIVE_PATH);
             this.systemProperties = new Properties();
+            this.files = new HashSet<>();
         }
 
         public Builder add(JavaArchive archive) {
@@ -101,6 +110,21 @@ public final class ClassPath {
             return ClassPathDirectory.builder(name, this);
         }
 
+        /**
+         * Add the files to the classpath.
+         *
+         * @param files
+         * @return self
+         */
+        public Builder add(File... files) {
+            for (File file : files) {
+                if (file.canRead() && file.isFile()) {
+                    this.files.add(file);
+                }
+            }
+            return this;
+        }
+
         Builder addArchive(Archive<?> archive) {
             this.archive.add(archive, ROOT_ARCHIVE_PATH, ZipExporter.class);
             return this;
@@ -115,6 +139,14 @@ public final class ClassPath {
                     throw new RuntimeException("Cannot add system properties", e);
                 }
                 this.archive.add(new StringAsset(writer.toString()), SYSTEM_PROPERTIES_ARCHIVE_PATH);
+            }
+            if (!files.isEmpty()) {
+                StringBuilder builder = new StringBuilder();
+                for (File file : files) {
+                    builder.append(file.getAbsolutePath());
+                    builder.append(System.lineSeparator());
+                }
+                this.archive.add(new StringAsset(builder.toString()), FILE_CLASSPATH_ENTRIES_ARCHIVE_PATH);
             }
             return archive;
         }

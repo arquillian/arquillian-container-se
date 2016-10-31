@@ -11,6 +11,7 @@
          <property name="debug">false</property>
          <property name="keepDeploymentArchives">false</property>
          <property name="waitTime">5</property>
+         <property name="librariesPath">target/libraries</property>
       </configuration>
    </container>
 
