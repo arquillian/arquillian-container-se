@@ -16,7 +16,9 @@
  */
 package org.jboss.arquillian.container.se.test.simple;
 
-import junit.framework.Assert;
+import static org.junit.Assert.assertEquals;
+
+import javax.json.Json;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
@@ -36,6 +38,12 @@ public class JavaArchiveSmokeTest {
 
     @Test
     public void test() {
-        Assert.assertEquals(2, 1 + 1);
+        assertEquals(2, 1 + 1);
+    }
+
+    @Test
+    public void testLibrariesPath() {
+        // Test that jsonp is on the class path
+        Json.createArrayBuilder().build();
     }
 }
