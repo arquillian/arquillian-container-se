@@ -24,6 +24,7 @@ import org.jboss.arquillian.container.test.spi.client.deployment.DeploymentPacka
 import org.jboss.arquillian.container.test.spi.client.deployment.ProtocolArchiveProcessor;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 
 /**
  * @author Tomas Remes
@@ -34,13 +35,17 @@ public class TestDeploymentPackager implements DeploymentPackager {
     public Archive<?> generateDeployment(TestDeployment testDeployment, Collection<ProtocolArchiveProcessor> collection) {
         Archive<?> applicationArchive = testDeployment.getApplicationArchive();
         boolean isClassPath = ClassPath.isRepresentedBy(applicationArchive);
+        ClassPath.Builder syntheticClassPath = null;
         for (Archive<?> auxiliaryArchive : testDeployment.getAuxiliaryArchives()) {
             if (isClassPath) {
                 applicationArchive.add(auxiliaryArchive, ClassPath.ROOT_ARCHIVE_PATH, ZipExporter.class);
             } else {
-                applicationArchive.merge(auxiliaryArchive);
+                if (syntheticClassPath == null) {
+                    syntheticClassPath = ClassPath.builder().add(applicationArchive.as(JavaArchive.class));
+                }
+                syntheticClassPath.add(auxiliaryArchive.as(JavaArchive.class));
             }
         }
-        return applicationArchive;
+        return syntheticClassPath != null ? syntheticClassPath.build() : applicationArchive;
     }
 }
