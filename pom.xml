@@ -25,7 +25,7 @@
         <maven.compiler.plugin.version>3.3</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>2.18</maven.surefire.plugin.version>
         <maven.nexus.plugin.version>2.1</maven.nexus.plugin.version>
-        <scm.plugin.version>1.9.2</scm.plugin.version>
+        <scm.plugin.version>1.11.1</scm.plugin.version>
         <maven.scm.provider.gitexe>1.9.1</maven.scm.provider.gitexe>
         <nexus.plugin.version>2.1</nexus.plugin.version>
         <maven.release.plugin.version>2.5.1</maven.release.plugin.version>
