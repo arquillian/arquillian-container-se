@@ -28,7 +28,7 @@
         <scm.plugin.version>1.9.2</scm.plugin.version>
         <maven.scm.provider.gitexe>1.9.1</maven.scm.provider.gitexe>
         <nexus.plugin.version>2.1</nexus.plugin.version>
-        <maven.release.plugin.version>2.5.1</maven.release.plugin.version>
+        <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
         <jboss.releases.repo.url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</jboss.releases.repo.url>
     </properties>
 
