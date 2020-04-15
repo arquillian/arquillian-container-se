@@ -12,7 +12,7 @@
     <artifactId>container-se-tests</artifactId>
     <properties>
         <tomcat.version>8.0.33</tomcat.version>
-        <htmlunit.version>2.23</htmlunit.version>
+        <htmlunit.version>2.39.1</htmlunit.version>
         <shrinkwrap.resolvers.version>2.2.4</shrinkwrap.resolvers.version>
     </properties>
 
